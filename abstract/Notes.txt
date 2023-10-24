@@ -1,0 +1,21 @@
+MAIN CONCEPT
+lay can: time period until cancellation of contract
+accuracy of lay can time with delivered time, find optimal path.
+
+Inputs: consumption per 10th's of miles
+20-28 tons petrol (10.016, 10.017)
+~10.1 m
+
+Parameters:
+weather conditions (PRIORITY)
+ship weights(OPTIONAL, WORK WITH FOLLOWING FOR NOW)
+properller condition
+CURRENT gas prices -> opportunity cost
+loading/unload weight of ship(PRIORITY)
+opportunity cost for delivering day (SUPER PRIORITY TIED WITH LAY CAN)
+
+Examples of opportunity day:
+Slow down speed to save fuel, day 1 is 10k profit, day 2 is 9k, day 3 12k, day 4 6k
+
+Validation:
+worst case scenario
