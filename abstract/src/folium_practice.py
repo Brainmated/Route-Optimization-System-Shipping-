@@ -5,7 +5,7 @@ from folium.plugins import BoatMarker
 #import ports from the csv
 ports = [
     {"name": "Port A", "lat": 40.7128, "lon": -74.0060},
-    {"name": "Port A", "lat": 51.5074, "lon": -0.1278}
+    {"name": "Port B", "lat": 51.5074, "lon": -0.1278}
 ]
 
 #folium map centered on the center of the map
@@ -14,8 +14,8 @@ m = folium.Map(location=[0, 0], zoom_start=2)
 
 #iterate through ports with port
 for port in ports:
-    folium.Maker(
-        location=[port["lat"], port["long"]],
+    folium.Marker(
+        location=[port["lat"], port["lon"]],
         popup=port["name"],
         icon=folium.Icon(icon="anchor")
     ).add_to(m)
@@ -31,6 +31,12 @@ for route in routes:
 
     BoatMarker(
         [ports[0]["lat"], ports[0]["lon"]],
-        [ports[0]["lat"], ports[0]["lon"]]
+        [ports[0]["lat"], ports[0]["lon"]],
+        color ="FF0000",
+        heading_in_degrees=90,
+        wind_heading_in_degrees=0
     ).add_to(m)
 
+#EXTREMELY IMPORTANT WE MAKE A .HTML FILE, THIS WILL WORK WITH OUR DJANGO PROGRAMM
+
+m.save("ship_map.html")
