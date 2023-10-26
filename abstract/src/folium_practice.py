@@ -1,5 +1,5 @@
 import folium
-from folium.plugins import BoatMaker
+from folium.plugins import BoatMarker
 
 
 #import ports from the csv
@@ -24,4 +24,13 @@ for port in ports:
 routes = [
     ("Port A", "port B")
 ]
+
+#Iterate through routes with route
+for route in routes:
+    start_port, end_port = route
+
+    BoatMarker(
+        [ports[0]["lat"], ports[0]["lon"]],
+        [ports[0]["lat"], ports[0]["lon"]]
+    ).add_to(m)
 
