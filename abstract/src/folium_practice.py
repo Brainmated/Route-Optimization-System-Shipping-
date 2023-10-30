@@ -1,7 +1,7 @@
 import folium
 from folium.plugins import BoatMarker
 import pandas as pd
-from qgis.core import *
+#from qgis.core import *
 
 data = pd.read_csv("E:/Programming in Python/data/World_port_Index.csv")
 
@@ -23,6 +23,10 @@ for port in ports:
         popup=port["name"],
         icon=folium.Icon(icon="anchor")
     ).add_to(m)
+
+    locations = [[port["lat"], port["lon"]] for port in ports]
+    line = folium.PolyLine(locations=locations, color='blue')
+    m.add_child(line)
 
 #Sample ship routes
 routes = [
