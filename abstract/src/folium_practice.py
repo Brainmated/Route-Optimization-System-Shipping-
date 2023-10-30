@@ -1,6 +1,7 @@
 import folium
 from folium.plugins import BoatMarker
 import pandas as pd
+from qgis.core import *
 
 data = pd.read_csv("E:/Programming in Python/data/World_port_Index.csv")
 
@@ -40,19 +41,6 @@ for route in routes:
         wind_heading_in_degrees=0
     ).add_to(m)
 
-    # Get the coordinates of the start and end ports
-    start_lat = next(port["lat"] for port in ports if port["name"] == start_port)
-    start_lon = next(port["lon"] for port in ports if port["name"] == start_port)
-    end_lat = next(port["lat"] for port in ports if port["name"] == end_port)
-    end_lon = next(port["lon"] for port in ports if port["name"] == end_port)
-
-    # Check if the port names were found
-    if start_lat is not None and start_lon is not None and end_lat is not None and end_lon is not None:
-        folium.PolyLine(
-            locations=[[start_lat, start_lon], [end_lat, end_lon]],
-            color="blue",
-            weight=2
-        ).add_to(m)
 
 #EXTREMELY IMPORTANT WE MAKE A .HTML FILE, THIS WILL WORK WITH OUR DJANGO PROGRAMM
 
