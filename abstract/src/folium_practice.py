@@ -45,6 +45,22 @@ for route in routes:
         wind_heading_in_degrees=0
     ).add_to(m)
 
+'''This is a test. AND IT FUCKING WORKS.'''
+# Create a custom HTML form for user input
+form_html = """
+<div style="position: fixed; top: 10px; left: 10px; background-color: white; padding: 10px; z-index: 9999;">
+    <form id="port-form">
+        <label for="port-a">Port A:</label>
+        <input type="text" id="port-a" name="port-a" placeholder="Enter Port A"><br><br>
+        <label for="port-b">Port B:</label>
+        <input type="text" id="port-b" name="port-b" placeholder="Enter Port B"><br><br>
+        <input type="submit" value="Submit">
+    </form>
+</div>
+"""
+
+# Add the custom HTML form to the map
+m.get_root().html.add_child(folium.Element(form_html))
 
 #EXTREMELY IMPORTANT WE MAKE A .HTML FILE, THIS WILL WORK WITH OUR DJANGO PROGRAMM
 
