@@ -58,6 +58,24 @@ form_html = """
     </form>
 </div>
 """
+#This is the method which will constantly update the weather markers
+def update_weather_data():
+    # Fetch the latest weather data from the API
+    weather_data = requests.get(api_url).json()
+
+    # Remove existing markers from the map
+    map.remove()
+
+    # Add new markers with updated weather information
+    for location in weather_data['locations']:
+        lat = location['latitude']
+        lon = location['longitude']
+        weather_info = location['weather']
+
+        # Create a marker with updated weather information
+        marker = folium.Marker(location=[lat, lon], popup=weather_info)
+        marker.add_to(map)
+
 
 # Add the custom HTML form to the map
 m.get_root().html.add_child(folium.Element(form_html))
