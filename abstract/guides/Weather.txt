@@ -1,1 +1,2 @@
-https://www.youtube.com/watch?v=C4fQ23zlA3o
+Frontal weather map: https://www.youtube.com/watch?v=C4fQ23zlA3o
+QGIS Weather map: https://www.youtube.com/watch?v=40J6IcTpFK4
