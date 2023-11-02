@@ -1,6 +1,8 @@
 import folium
 from folium.plugins import BoatMarker
 import pandas as pd
+import time
+import schedule
 #from qgis.core import *
 
 data = pd.read_csv("E:/Programming in Python/data/World_port_Index.csv")
