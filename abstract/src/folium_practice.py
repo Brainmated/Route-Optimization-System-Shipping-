@@ -7,6 +7,14 @@ import schedule
 
 data = pd.read_csv("E:/Programming in Python/data/World_port_Index.csv")
 
+# Schedule the weather data update every hour
+schedule.every().hour.do(update_weather_data)
+
+# Run the scheduled updates indefinitely
+#This will loop every hour to give new weather updates for the marks
+while True:
+    schedule.run_pending()
+    time.sleep(1)
 
 #import ports from the csv
 ports = [
