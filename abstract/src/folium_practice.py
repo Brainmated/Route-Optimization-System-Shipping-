@@ -12,11 +12,13 @@ wave_icon = folium.CustomIcon(icon_image=wave_image, icon_size=(50, 50))
 # Schedule the weather data update every hour
 #schedule.every().hour.do(update_weather_data)
 
+'''
 # Run the scheduled updates indefinitely
 #This will loop every hour to give new weather updates for the marks
 while True:
     schedule.run_pending()
     time.sleep(1)
+'''
 
 #import ports from the csv
 ports = [
@@ -95,3 +97,4 @@ m.get_root().html.add_child(folium.Element(form_html))
 #EXTREMELY IMPORTANT WE MAKE A .HTML FILE, THIS WILL WORK WITH OUR DJANGO PROGRAMM
 
 m.save("E:/Programming in Python/results/Reports/ship_map.html")
+print("Html Ready.")
