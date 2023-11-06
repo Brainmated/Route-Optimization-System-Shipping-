@@ -5,10 +5,12 @@ import time
 import schedule
 #from qgis.core import *
 
-data = pd.read_csv("E:/Programming in Python/data/World_port_Index.csv")
 
+wave_image = 'E:/Programming in Python/images/red_wave.png'
+data = pd.read_csv("E:/Programming in Python/data/World_port_Index.csv")
+wave_icon = folium.CustomIcon(icon_image=wave_image, icon_size=(50, 50))
 # Schedule the weather data update every hour
-schedule.every().hour.do(update_weather_data)
+#schedule.every().hour.do(update_weather_data)
 
 # Run the scheduled updates indefinitely
 #This will loop every hour to give new weather updates for the marks
@@ -83,7 +85,7 @@ def update_weather_data():
         weather_info = location['weather']
 
         # Create a marker with updated weather information
-        marker = folium.Marker(location=[lat, lon], popup=weather_info)
+        marker = folium.Marker(location=[lat, lon], popup=weather_info, icon = icon)
         marker.add_to(map)
 
 
