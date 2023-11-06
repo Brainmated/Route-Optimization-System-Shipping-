@@ -87,7 +87,7 @@ def update_weather_data():
         weather_info = location['weather']
 
         # Create a marker with updated weather information
-        marker = folium.Marker(location=[lat, lon], popup=weather_info, icon = icon)
+        marker = folium.Marker(location=[lat, lon], popup=weather_info, icon = wave_icon)
         marker.add_to(map)
 
 
