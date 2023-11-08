@@ -12,7 +12,7 @@ def get_wind_speed(lat, lon, api_key):
         return None
 
 def main():
-    # Replace with your OpenWeatherAPI key
+
     api_key = "YOUR_OPENWEATHERAPI_KEY"
 
     # Coordinates of the location (e.g., a point in the ocean)
