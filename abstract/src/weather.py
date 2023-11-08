@@ -1,5 +1,3 @@
-python
-
 import folium
 import requests
 
