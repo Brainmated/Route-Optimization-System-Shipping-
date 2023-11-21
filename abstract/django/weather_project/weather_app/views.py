@@ -50,10 +50,12 @@ def fetch_weather_and_forecast(city, api_key, current_weather_url, forecast_url)
     for daily_data in forecast_response["daily"][:5]:
         daily_forecasts.append({
             "day": datetime.datetime.fromtimestamp(daily_data["dt"]).strftime("%A"),
-            "min_temp": round(daily_data["temp"]["min"])
+            "min_temp": round(daily_data["temp"]["min"]),
             "max_temp": round(daily_data["temp"]["max"]),
             "description": daily_data["weather"][0]["description"],
             "icon": daily_data["weather"][0]["icon"]
-        })
+            })
+            
+        
 
         return weather_data, daily_forecasts
