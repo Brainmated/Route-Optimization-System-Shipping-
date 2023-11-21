@@ -11,7 +11,7 @@ def index(request):
 
     if request.method == "POST":
         city1 = request.POST["city1"]
-        city2 = request.get("city2", None)
+        city2 = request.POST.get("city2", None)
 
         weather_data1, daily_forecasts1 = fetch_weather_and_forecast(city1, API_KEY, current_weather_url, forecast_url)
         if city2:
@@ -47,15 +47,13 @@ def fetch_weather_and_forecast(city, api_key, current_weather_url, forecast_url)
     }
     #a list to append each forecast
     daily_forecasts = []
-    for daily_data in forecast_response["daily"][:5]:
+    for daily_data in forecast_response['daily'][:5]:
         daily_forecasts.append({
-            "day": datetime.datetime.fromtimestamp(daily_data["dt"]).strftime("%A"),
-            "min_temp": round(daily_data["temp"]["min"]),
-            "max_temp": round(daily_data["temp"]["max"]),
-            "description": daily_data["weather"][0]["description"],
-            "icon": daily_data["weather"][0]["icon"]
-            })
+            'day': datetime.datetime.fromtimestamp(daily_data['dt']).strftime('%A'),
+            'min_temp': round(daily_data['temp']['min'] - 273.15, 2),
+            'max_temp': round(daily_data['temp']['max'] - 273.15, 2),
+            'description': daily_data['weather'][0]['description'],
+            'icon': daily_data['weather'][0]['icon'],
+        })
             
-        
-
-        return weather_data, daily_forecasts
+    return weather_data, daily_forecasts
