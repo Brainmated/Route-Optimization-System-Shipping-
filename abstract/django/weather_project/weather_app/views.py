@@ -6,17 +6,18 @@ from django.shortcuts import render
 # Create your views here.
 def index(request):
     API_KEY = open("E:/Programming in Python/applications/Thesis/abstract/django/weather_project/API_KEY", "r").read()
-    current_weather_url = "http://api.openweathermap.org/data/2.5/weather?q={}&appid={}"
-    forecast_url = "http://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude=current,minutely,hourly,alerts&appid={}"
+    current_weather_url = "https://api.openweathermap.org/data/2.5/weather?q={}&appid={}"
+    forecast_url = "https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&exclude=current,minutely,hourly,alerts&appid={}"
 
     if request.method == "POST":
         city1 = request.POST["city1"]
         city2 = request.POST.get("city2", None)
 
-        weather_data1, daily_forecasts1 = fetch_weather_and_forecast(city1, API_KEY, current_weather_url, forecast_url)
-        if city2:
-            weather_data2, daily_forecasts2 = fetch_weather_and_forecast(city2, API_KEY, current_weather_url, forecast_url)
+        weather_data1, daily_forecasts1 = fetch_weather_and_forecast(city1, api_key, current_weather_url, forecast_url)
 
+        if city2:
+            weather_data2, daily_forecasts2 = fetch_weather_and_forecast(city2, api_key, current_weather_url,
+                                                                         forecast_url)
         else:
             weather_data2, daily_forecasts2 = None, None
 
