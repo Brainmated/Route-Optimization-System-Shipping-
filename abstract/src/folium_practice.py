@@ -61,7 +61,7 @@ for route in routes:
 
 '''This is a test. AND IT FUCKING WORKS.'''
 # Create a custom HTML form for user input
-form_html = """
+form_html = 
 <div style="position: fixed; top: 10px; left: 10px; background-color: white; padding: 10px; z-index: 9999;">
     <form id="port-form">
         <label for="port-a">Port A:</label>
@@ -71,7 +71,7 @@ form_html = """
         <input type="submit" value="Submit">
     </form>
 </div>
-"""
+
 #This is the method which will constantly update the weather markers
 def update_weather_data():
     # Fetch the latest weather data from the API
