@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import SignUpForm
+from django.contrib.auth.views import LoginView, LogoutView
 
 # Home page view
 def index(request):
