@@ -1,18 +1,3 @@
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.contrib.auth import logout
-from django.shortcuts import redirect
-
-
-# Home page view
-def index(request):
-    return render(requestIt seems the previous response was cut off. Let's continue from where we left off.
-
-### Step 6: Configure URLs and Views
-
-Define the views for each page in `routing/views.py`:
-
-```python
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth import logout, login, authenticate
