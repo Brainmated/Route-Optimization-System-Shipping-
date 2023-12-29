@@ -4,6 +4,7 @@ from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import SignUpForm
 from django.contrib.auth.views import LoginView, LogoutView
+import folium
 
 # Home page view
 def index(request):
@@ -37,3 +38,16 @@ def signup(request):
     else:
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
+
+def show_map(request):
+    # Create map object
+    m = folium.Map(location=[45.5236, -122.6750], zoom_start=13)
+
+    # Generate map html
+    m = m._repr_html_()
+
+    context = {
+        'map': m,
+    }
+
+    return render(request, 'map.html', context)
