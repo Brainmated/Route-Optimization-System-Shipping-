@@ -43,7 +43,7 @@ def signup(request):
 
 def show_map(request):
     # Check if the form has been submitted
-    csv_filepath = 'data/ports.csv'
+    csv_filepath = 'E:/Programming in Python/applications/Thesis/ISROS/routing/data/ports.csv'
     ports = get_ports_from_csv(csv_filepath)
 
     if request.method == 'POST':

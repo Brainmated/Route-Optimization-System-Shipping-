@@ -1,23 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Interactive Map</title>
+    <!-- ... -->
 </head>
 <body>
     <h1>Vessel Travel Path</h1>
     <!-- Form for user input -->
     <form method="POST" action="">
         {% csrf_token %}
-        <label for="location1">Location 1 (lat, lon):</label>
-        <input type="text" id="location1" name="location1" placeholder="Enter latitude, longitude" required>
-        <label for="location2">Location 2 (lat, lon):</label>
-        <input type="text" id="location2" name="location2" placeholder="Enter latitude, longitude" required>
+        <label for="location1">Location 1:</label>
+        <select id="location1" name="location1" required>
+            {% for port_name, coordinates in ports %}
+                <option value="{{ coordinates }}">{{ port_name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="location2">Location 2:</label>
+        <select id="location2" name="location2" required>
+            {% for port_name, coordinates in ports %}
+                <option value="{{ coordinates }}">{{ port_name }}</option>
+            {% endfor %}
+        </select>
+        
         <button type="submit">Show Path</button>
     </form>
-  
-    <!-- This is where your map will be displayed -->
+
+    <!-- Map display here -->
     <div id="map" style="height: 500px;">
         {{ map|safe }}
     </div>
+
+    <!-- ... -->
 </body>
 </html>
