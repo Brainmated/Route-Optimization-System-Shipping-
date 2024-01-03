@@ -56,7 +56,7 @@ def show_map(request):
         folium_map = path.get_map()
     else:
         # Default map centered at an initial location
-        folium_map = folium.Map(location=[45.5236, -122.6750], zoom_start=13)
+        folium_map = folium.Map(location=[45.5236, -122.6750], zoom_start=5)
 
     # Pass the map to the template
     map_html = folium_map._repr_html_()
