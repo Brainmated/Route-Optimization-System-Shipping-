@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import SignUpForm
+from .pathing import Pathing
 from django.contrib.auth.views import LoginView, LogoutView
 import folium
 
@@ -40,14 +41,22 @@ def signup(request):
     return render(request, 'signup.html', {'form': form})
 
 def show_map(request):
-    # Create map object
-    m = folium.Map(location=[45.5236, -122.6750], zoom_start=13)
+    # Check if the form has been submitted
+    if request.method == 'POST':
+        # Get locations from the POST request
+        location1 = [float(coord) for coord in request.POST['location1'].split(',')]
+        location2 = [float(coord) for coord in request.POST['location2'].split(',')]
 
-    # Generate map html
-    m = m._repr_html_()
+        # Create a Pathing instance and generate the map
+        path = Pathing(location1, location2)
+        folium_map = path.get_map()
+    else:
+        # Default map centered at an initial location
+        folium_map = folium.Map(location=[45.5236, -122.6750], zoom_start=13)
 
+    # Pass the map to the template
+    map_html = folium_map._repr_html_()
     context = {
-        'map': m,
+        'map': map_html,
     }
-
     return render(request, 'map.html', context)
