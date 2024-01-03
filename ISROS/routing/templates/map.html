@@ -10,19 +10,17 @@
         {% csrf_token %}
         <label for="location1">Location 1:</label>
         <select id="location1" name="location1" required>
-            {% for port_name, coordinates in ports %}
-                <option value="{{ coordinates }}">{{ port_name }}</option>
+            {% for port_name, (lat, lon) in ports %}
+                <option value="{{ lat }},{{ lon }}">{{ port_name }}</option>
             {% endfor %}
         </select>
-
+    
         <label for="location2">Location 2:</label>
         <select id="location2" name="location2" required>
-            {% for port_name, coordinates in ports %}
-                <option value="{{ coordinates }}">{{ port_name }}</option>
+            {% for port_name, (lat, lon) in ports %}
+                <option value="{{ lat }},{{ lon }}">{{ port_name }}</option>
             {% endfor %}
         </select>
-        
-        <button type="submit">Show Path</button>
     </form>
 
     <!-- Map display here -->
