@@ -5,6 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from .forms import SignUpForm
 from .pathing import Pathing
 from django.contrib.auth.views import LoginView, LogoutView
+from .utils import get_ports_from_csv
 import folium
 
 # Home page view
@@ -42,6 +43,9 @@ def signup(request):
 
 def show_map(request):
     # Check if the form has been submitted
+    csv_filepath = 'data/ports.csv'
+    ports = get_ports_from_csv(csv_filepath)
+
     if request.method == 'POST':
         # Get locations from the POST request
         location1 = [float(coord) for coord in request.POST['location1'].split(',')]
@@ -58,5 +62,6 @@ def show_map(request):
     map_html = folium_map._repr_html_()
     context = {
         'map': map_html,
+        'ports': ports,
     }
     return render(request, 'map.html', context)
