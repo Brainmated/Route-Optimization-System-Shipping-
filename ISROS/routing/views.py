@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import SignUpForm
-from .pathing import Pathing
+from .pathing import Pathing, GridMap
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 import folium
@@ -45,6 +45,7 @@ def show_map(request):
     # Check if the form has been submitted
     csv_filepath = 'E:/Programming in Python/applications/Thesis/ISROS/routing/data/ports.csv'
     ports = get_ports_from_csv(csv_filepath)
+    grid_map = GridMap(bounds=((min_x, min_y), (max_x, max_y)), resolution="desired_resolution")
 
     if request.method == 'POST':
         # Get locations from the POST request
