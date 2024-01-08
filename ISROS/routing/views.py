@@ -42,10 +42,12 @@ def signup(request):
     return render(request, 'signup.html', {'form': form})
 
 def show_map(request):
+    min_x, min_y = (30.0, -120.0)
+    max_x, max_y = (50.0, -70.0) 
     # Check if the form has been submitted
     csv_filepath = 'E:/Programming in Python/applications/Thesis/ISROS/routing/data/ports.csv'
     ports = get_ports_from_csv(csv_filepath)
-    #grid_map = GridMap(bounds=((min_x, min_y), (max_x, max_y)), resolution="desired_resolution")
+    grid_map = GridMap(bounds=((min_x, min_y), (max_x, max_y)), resolution=5)
 
     if request.method == 'POST':
         # Get locations from the POST request
