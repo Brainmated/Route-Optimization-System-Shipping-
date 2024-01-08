@@ -28,16 +28,21 @@ class Pathing:
         self.grid_map = grid_map
 
     def find_path(self):
-        # Convert real-world coordinates to grid coordinates
-        start_node = self.grid_coordinate(self.location1)
-        end_node = self.grid_coordinate(self.location2)
+        try:
+            # Convert real-world coordinates to grid coordinates
+            start_node = self.grid_coordinate(self.location1)
+            end_node = self.grid_coordinate(self.location2)
 
-        # Use a pathfinding algorithm like A* to calculate the shortest path on the grid.
-        path = nx.astar_path(self.grid_map.graph, start_node, end_node)
-        # Convert the path back to real-world coordinates
-        real_path = [self.real_coordinate(node) for node in path]
+            # Use a pathfinding algorithm like A* to calculate the shortest path on the grid.
+            path = nx.astar_path(self.grid_map.graph, start_node, end_node)
+            # Convert the path back to real-world coordinates
+            real_path = [self.real_coordinate(node) for node in path]
 
-        return real_path
+            return real_path
+        except Exception as e:
+            print(f"An error occurred in find_path: {e}")
+            # Handle the error or return a default value
+            return []
 
     def grid_coordinate(self, location):
         # Convert a real-world coordinate to a grid coordinate
@@ -48,31 +53,33 @@ class Pathing:
         pass
 
     def get_map(self):
-        path = self.find_path()
-        # Create a folium map object, centered on the start of the path
-        m = folium.Map(location=self.location1, zoom_start=12)
+        try:
+            path = self.find_path()
+            if not path:
+                raise ValueError("Unable to find path.")
 
-        # Add markers for the start and end points
-        folium.Marker(self.location1, tooltip='Start').add_to(m)
-        folium.Marker(self.location2, tooltip='End').add_to(m)
-        
-        # Draw a path between the two points
-        AntPath(locations=path).add_to(m)
+            # Create a folium map object, centered on the start of the path
+            m = folium.Map(location=self.location1, zoom_start=12)
 
-        # Calculate the bounds of the path
-        bounds = self.calculate_bounds(path)
+            # Add markers for the start and end points
+            folium.Marker(self.location1, tooltip='Start').add_to(m)
+            folium.Marker(self.location2, tooltip='End').add_to(m)
+            
+            # Draw a path between the two points if path exists
+            if path:
+                AntPath(locations=path).add_to(m)
 
-        # Restrict the map view to the path area with maxBounds
-        m.fit_bounds(bounds)
-        m.options['minZoom'] = 12  # Set the minimum zoom level (adjust as necessary)
-        m.options['maxZoom'] = 17  # Set the maximum zoom level (adjust as necessary)
+            # Calculate the bounds of the path
+            bounds = self.calculate_bounds(path)
 
-        # Apply the bounds to the map
-        m.options['maxBounds'] = bounds
-        # Set the bounds to be more rigid using maxBoundsViscosity
-        m.options['maxBoundsViscosity'] = 1.0
+            # Apply other map settings here
+            # ...
 
-        return m
+            return m
+        except Exception as e:
+            print(f"An error occurred in get_map: {e}")
+            # Return a default map
+            return folium.Map(location=self.location1, zoom_start=12)
     
     def calculate_bounds(self, path):
         # Assume path is a list of [lat, lng] points
