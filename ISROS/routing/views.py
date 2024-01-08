@@ -55,7 +55,7 @@ def show_map(request):
         location2 = [float(coord) for coord in request.POST['location2'].split(',')]
 
         # Create a Pathing instance and generate the map
-        path = Pathing(location1, location2)
+        path = Pathing(location1, location2, grid_map)
         folium_map = path.get_map()
     else:
         # Default map centered at an initial location
