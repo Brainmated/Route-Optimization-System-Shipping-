@@ -73,3 +73,12 @@ class Pathing:
         m.options['maxBoundsViscosity'] = 1.0
 
         return m
+    
+    def calculate_bounds(self, path):
+        # Assume path is a list of [lat, lng] points
+        latitudes = [point[0] for point in path]
+        longitudes = [point[1] for point in path]
+        min_lat, max_lat = min(latitudes), max(latitudes)
+        min_lng, max_lng = min(longitudes), max(longitudes)
+        # Return the bounds in the format [(south_west), (north_east)]
+        return [(min_lat, min_lng), (max_lat, max_lng)]
