@@ -48,16 +48,28 @@ class Pathing:
         pass
 
     def get_map(self):
-
         path = self.find_path()
-        # Create a folium map object
+        # Create a folium map object, centered on the start of the path
         m = folium.Map(location=self.location1, zoom_start=12)
 
         # Add markers for the start and end points
         folium.Marker(self.location1, tooltip='Start').add_to(m)
         folium.Marker(self.location2, tooltip='End').add_to(m)
-
+        
         # Draw a path between the two points
-        AntPath(locations=[path]).add_to(m)
+        AntPath(locations=path).add_to(m)
+
+        # Calculate the bounds of the path
+        bounds = self.calculate_bounds(path)
+
+        # Restrict the map view to the path area with maxBounds
+        m.fit_bounds(bounds)
+        m.options['minZoom'] = 12  # Set the minimum zoom level (adjust as necessary)
+        m.options['maxZoom'] = 17  # Set the maximum zoom level (adjust as necessary)
+
+        # Apply the bounds to the map
+        m.options['maxBounds'] = bounds
+        # Set the bounds to be more rigid using maxBoundsViscosity
+        m.options['maxBoundsViscosity'] = 1.0
 
         return m
