@@ -44,6 +44,45 @@ class Pathing:
             # Handle the error or return a default value
             return []
         
+
+    def grid_coordinate(self, location):
+        # Convert a real-world coordinate to a grid coordinate
+        pass
+
+    def real_coordinate(self, grid_location):
+        # Convert a grid coordinate back to a real-world coordinate
+        pass
+
+    def get_map(self):
+        try:
+            path = self.find_path()
+            if not path:
+                raise ValueError("Unable to find path.")
+
+            # Create a folium map object, centered on the start of the path
+            m = folium.Map(location=self.location1, zoom_start=12)
+
+            # Add the grid to the map (assuming self.grid_map.resolution is the desired spacing)
+            self.add_grid_to_map(m, self.grid_map.resolution)
+
+            # Add markers for the start and end points
+            folium.Marker(self.location1, tooltip='Start').add_to(m)
+            folium.Marker(self.location2, tooltip='End').add_to(m)
+            
+            # Draw a path between the two points if path exists
+            if path:
+                AntPath(locations=path).add_to(m)
+
+            # Calculate the bounds of the path
+            bounds = self.calculate_bounds(path)
+
+            return m
+        
+        except Exception as e:
+            print(f"An error occurred in get_map: {e}")
+            # Return a default map
+            return folium.Map(location=self.location1, zoom_start=12)
+    
     def add_grid_to_map(self, map_obj, grid_spacing):
         min_x, min_y = self.bounds[0]
         max_x, max_y = self.bounds[1]
@@ -69,47 +108,7 @@ class Pathing:
                 color='blue',
                 weight=1
             ).add_to(map_obj)
-
-    def grid_coordinate(self, location):
-        # Convert a real-world coordinate to a grid coordinate
-        pass
-
-    def real_coordinate(self, grid_location):
-        # Convert a grid coordinate back to a real-world coordinate
-        pass
-
-    def get_map(self):
-        try:
-            path = self.find_path()
-            if not path:
-                raise ValueError("Unable to find path.")
-
-            # Create a folium map object, centered on the start of the path
-            m = folium.Map(location=self.location1, zoom_start=12)
-
-            # Add the grid to the map (assuming self.grid_map.resolution is the desired spacing)
-            self.add_grid_to_map(m, self.grid_map.resolution)
             
-            # Add markers for the start and end points
-            folium.Marker(self.location1, tooltip='Start').add_to(m)
-            folium.Marker(self.location2, tooltip='End').add_to(m)
-            
-            # Draw a path between the two points if path exists
-            if path:
-                AntPath(locations=path).add_to(m)
-
-            # Calculate the bounds of the path
-            bounds = self.calculate_bounds(path)
-
-            # Apply other map settings here
-            # ...
-
-            return m
-        except Exception as e:
-            print(f"An error occurred in get_map: {e}")
-            # Return a default map
-            return folium.Map(location=self.location1, zoom_start=12)
-    
     def calculate_bounds(self, path):
         # Assume path is a list of [lat, lng] points
         latitudes = [point[0] for point in path]
