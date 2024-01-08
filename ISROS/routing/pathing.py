@@ -43,6 +43,32 @@ class Pathing:
             print(f"An error occurred in find_path: {e}")
             # Handle the error or return a default value
             return []
+        
+    def add_grid_to_map(self, map_obj, grid_spacing):
+        min_x, min_y = self.bounds[0]
+        max_x, max_y = self.bounds[1]
+        
+        # Calculate the number of grid lines needed
+        num_lines_x = int((max_x - min_x) / grid_spacing) + 1
+        num_lines_y = int((max_y - min_y) / grid_spacing) + 1
+
+        # Draw the vertical grid lines
+        for i in range(num_lines_x):
+            x = min_x + i * grid_spacing
+            folium.PolyLine(
+                locations=[(min_y, x), (max_y, x)],
+                color='blue',
+                weight=1
+            ).add_to(map_obj)
+
+        # Draw the horizontal grid lines
+        for j in range(num_lines_y):
+            y = min_y + j * grid_spacing
+            folium.PolyLine(
+                locations=[(y, min_x), (y, max_x)],
+                color='blue',
+                weight=1
+            ).add_to(map_obj)
 
     def grid_coordinate(self, location):
         # Convert a real-world coordinate to a grid coordinate
@@ -61,6 +87,9 @@ class Pathing:
             # Create a folium map object, centered on the start of the path
             m = folium.Map(location=self.location1, zoom_start=12)
 
+            # Add the grid to the map (assuming self.grid_map.resolution is the desired spacing)
+            self.add_grid_to_map(m, self.grid_map.resolution)
+            
             # Add markers for the start and end points
             folium.Marker(self.location1, tooltip='Start').add_to(m)
             folium.Marker(self.location2, tooltip='End').add_to(m)
