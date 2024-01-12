@@ -7,6 +7,7 @@ from .pathing import Pathing, GridMap
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 import folium
+import random
 
 # Home page view
 def index(request):
@@ -72,7 +73,7 @@ def show_map(request):
 
 def debug_view(request):
     # Create a map object centered on a geographic midpoint (e.g., 0,0) with a starting zoom level
-    m = folium.Map(location=[0, 0], zoom_start=9)
+    m = folium.Map(location=[0, 0], zoom_start=1, min_zoom =1)
 
     # Define the size of the grid cells
     grid_size = 1  # Example for a 10-degree grid; adjust as needed for smaller cells
@@ -85,6 +86,21 @@ def debug_view(request):
     # Create vertical lines (longitude lines)
     for lon in range(-90, 91, grid_size):
         folium.PolyLine([(-90, lon), (90, lon)], color="black", weight=0.1).add_to(m)
+    
+    # Choose a random cell to highlight in red
+    # Subtract and add grid_size/2 to avoid selecting the extreme edges which don't form full cells
+    random_lat = random.randint(-90 + grid_size//2, 90 - grid_size//2)
+    random_lon = random.randint(-180 + grid_size//2, 180 - grid_size//2)
+
+    # Normalize the random latitude and longitude to fit the grid
+    random_lat = random_lat - random_lat % grid_size
+    random_lon = random_lon - random_lon % grid_size
+
+    # Draw a red rectangle around the random cell
+    bounds = [(random_lat, random_lon), 
+              (random_lat + grid_size, random_lon + grid_size)]
+    folium.Rectangle(bounds, color='red', fill=True, fill_color='red', fill_opacity=0.5).add_to(m)
+    
     # Render map to HTML
     map_html = m._repr_html_()
 
