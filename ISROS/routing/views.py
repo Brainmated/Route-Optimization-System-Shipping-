@@ -68,3 +68,25 @@ def show_map(request):
         'ports': ports,
     }
     return render(request, 'map.html', context)
+
+
+def debug_view(request):
+    # Create a map object centered on a geographic midpoint (e.g., 0,0) with a starting zoom level
+    m = folium.Map(location=[0, 0], zoom_start=2)
+
+    # Add a grid to the map
+    # This example uses a simple loop to create horizontal and vertical lines
+    for lat in range(-90, 91, 10):  # Adjust the step for different grid resolutions
+        folium.PolyLine([(lat, -180), (lat, 180)], color="black", weight=0.5).add_to(m)
+
+    for lon in range(-180, 181, 10):  # Adjust the step for different grid resolutions
+        folium.PolyLine([(-90, lon), (90, lon)], color="black", weight=0.5).add_to(m)
+
+    # Render map to HTML
+    map_html = m._repr_html_()
+
+    context = {
+        'map_html': map_html,
+    }
+
+    return render(request, 'routing/debug.html', context)
