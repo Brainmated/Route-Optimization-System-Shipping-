@@ -89,4 +89,4 @@ def debug_view(request):
         'map_html': map_html,
     }
 
-    return render(request, 'routing/debug.html', context)
+    return render(request, 'debug.html', context)
