@@ -72,16 +72,19 @@ def show_map(request):
 
 def debug_view(request):
     # Create a map object centered on a geographic midpoint (e.g., 0,0) with a starting zoom level
-    m = folium.Map(location=[0, 0], zoom_start=2)
+    m = folium.Map(location=[0, 0], zoom_start=9)
+
+    # Define the size of the grid cells
+    grid_size = 1  # Example for a 10-degree grid; adjust as needed for smaller cells
 
     # Add a grid to the map
-    # This example uses a simple loop to create horizontal and vertical lines
-    for lat in range(-90, 91, 10):  # Adjust the step for different grid resolutions
-        folium.PolyLine([(lat, -180), (lat, 180)], color="black", weight=0.5).add_to(m)
+    # Create horizontal lines (latitude lines)
+    for lat in range(-90, 91, grid_size):  
+        folium.PolyLine([(lat, -180), (lat, 180)], color="black", weight=0.1).add_to(m)
 
-    for lon in range(-180, 181, 10):  # Adjust the step for different grid resolutions
-        folium.PolyLine([(-90, lon), (90, lon)], color="black", weight=0.5).add_to(m)
-
+    # Create vertical lines (longitude lines)
+    for lon in range(-90, 91, grid_size):
+        folium.PolyLine([(-90, lon), (90, lon)], color="black", weight=0.1).add_to(m)
     # Render map to HTML
     map_html = m._repr_html_()
 
