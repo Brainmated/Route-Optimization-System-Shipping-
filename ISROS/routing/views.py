@@ -11,6 +11,7 @@ from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 import folium
 import random
+import requests
 import numpy as np
 
 # Home page view
@@ -115,6 +116,7 @@ def debug_view(request):
         
         # Create a marker for the random location
         folium.Marker([random_lat, random_lon]).add_to(m)
+
 
     # Render map to HTML
     map_html = m._repr_html_()
