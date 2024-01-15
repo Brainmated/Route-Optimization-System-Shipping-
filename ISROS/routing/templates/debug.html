@@ -3,13 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debug Map</title>
-    <!-- Include Folium's required CSS and JS -->
+    <title>Grid Map</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #map {
+            height: 80%; /* Adjust the height as needed */
+            width: 80%;  /* Adjust the width as needed */
+        }
+    </style>
 </head>
 <body>
-    <h1>Debug Map View</h1>
-    <!-- This div will hold the map -->
-    <div id="map" style="height: 600px;">
+    <div id="map">
+        <!-- The folium map will be inserted here -->
         {{ map_html|safe }}
     </div>
 </body>
