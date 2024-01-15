@@ -107,6 +107,15 @@ def debug_view(request):
     folium.PolyLine([(0, -180), (0, 180)], color="red", weight=0.3).add_to(m)  # Equator
     folium.PolyLine([(-90, 0), (90, 0)], color="red", weight=0.3).add_to(m)  # Prime Meridian
 
+    # Generate two random locations
+    # Latitude ranges from -90 to 90 and longitude ranges from -180 to 180
+    for _ in range(2):
+        random_lat = random.uniform(-90, 90)
+        random_lon = random.uniform(-180, 180)
+        
+        # Create a marker for the random location
+        folium.Marker([random_lat, random_lon]).add_to(m)
+
     # Render map to HTML
     map_html = m._repr_html_()
 
