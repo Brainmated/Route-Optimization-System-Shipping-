@@ -77,27 +77,35 @@ def show_map(request):
 
 
 def debug_view(request):
-    # Define the grid size and the bounds of the grid
+    # Define the bounds of your grid (replace with your specific grid bounds)
+    min_lat, max_lat = -90, 90  # Replace with the minimum and maximum latitude of your grid
+    min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
+    
+    # Create a map object centered on the geographic midpoint with a starting zoom level
+    m = folium.Map(
+        location=[(max_lat + min_lat) / 2, (max_lon + min_lon) / 2],
+        zoom_start=2,
+        min_zoom=2,
+        max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],  # This will restrict the view to the map's initial bounds
+    )
+    
+    # Define the actual bounds based on your grid limits
+    bounds = [[min_lat, min_lon], [max_lat, max_lon]]
+    m.fit_bounds(bounds)  # Fit the map to the bounds
+
     grid_size = 1
-    min_lat, max_lat = -10, 10
-    min_lon, max_lon = -10, 10
 
-    # Create a map object centered on the midpoint of the grid bounds with an appropriate zoom level
-    m = folium.Map(location=[(min_lat + max_lat) / 2, (min_lon + max_lon) / 2], zoom_start=2, min_zoom=2)
+    # Create horizontal lines (latitude lines)
+    for lat in range(-90, 90, grid_size):
+        folium.PolyLine([(lat, -180), (lat, 180)], color="black", weight=0.1).add_to(m)
 
-    # Create horizontal lines (latitude lines) within the bounds
-    for lat in range(min_lat, max_lat + grid_size, grid_size):
-        folium.PolyLine([(lat, min_lon), (lat, max_lon)], color="black", weight=0.1).add_to(m)
+    # Create vertical lines (longitude lines)
+    for lon in range(-180, 180, grid_size):
+        folium.PolyLine([(-90, lon), (90, lon)], color="black", weight=0.1).add_to(m)
 
-    # Create vertical lines (longitude lines) within the bounds
-    for lon in range(min_lon, max_lon + grid_size, grid_size):
-        folium.PolyLine([(min_lat, lon), (max_lat, lon)], color="black", weight=0.1).add_to(m)
-
-    # Emphasize the boundaries of the grid
-    folium.PolyLine([(min_lat, min_lon), (min_lat, max_lon), (max_lat, max_lon), (max_lat, min_lon), (min_lat, min_lon)], color="red", weight=2).add_to(m)
-
-    # Set the bounds of the map to the grid area
-    m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
+    # Emphasize the boundaries (equator and prime meridian)
+    folium.PolyLine([(0, -180), (0, 180)], color="red", weight=0.3).add_to(m)  # Equator
+    folium.PolyLine([(-90, 0), (90, 0)], color="red", weight=0.3).add_to(m)  # Prime Meridian
 
     # Render map to HTML
     map_html = m._repr_html_()

@@ -1,26 +1,15 @@
-<!-- debug.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grid Map</title>
-    <style>
-        body, html {
-            height: 100%;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #map {
-            height: 80%;
-            width: 80%;
-        }
-    </style>
+    <title>Debug Map</title>
+    <!-- Include Folium's required CSS and JS -->
 </head>
 <body>
-    <div id="map">
+    <h1>Debug Map View</h1>
+    <!-- Set both width and height of the map to 500px -->
+    <div id="map" style="height: 500px; width: 500px;">
         {{ map_html|safe }}
     </div>
 </body>
