@@ -1,3 +1,4 @@
+<!-- debug.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,14 +14,13 @@
             align-items: center;
         }
         #map {
-            height: 80%; /* Adjust the height as needed */
-            width: 80%;  /* Adjust the width as needed */
+            height: 80%;
+            width: 80%;
         }
     </style>
 </head>
 <body>
     <div id="map">
-        <!-- The folium map will be inserted here -->
         {{ map_html|safe }}
     </div>
 </body>
