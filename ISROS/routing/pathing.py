@@ -1,6 +1,7 @@
 import folium
 from folium.plugins import AntPath
 import networkx as nx
+import osmnx as ox
 
 
 class GridMap:
@@ -18,8 +19,20 @@ class Pathing:
         self.grid_map = grid_map
 
     def is_land(lat, lon):
-        #in the making
-        pass
+        # Buffer in degrees to account for the granularity of the grid
+        buffer = 0.005
+        # Use a simple box around the point to represent the grid cell
+        north, south, east, west = lat + buffer, lat - buffer, lon + buffer, lon - buffer
+        # Create a polygon to represent the grid cell
+        polygon = ox.utils_geo.bbox_to_poly(north, south, east, west)
+        
+        # Query OSM for water bodies within the polygon
+        water = ox.geometries_from_polygon(polygon, tags={'natural': 'water', 'landuse': 'reservoir'})
+        
+        # If there are water bodies in the cell, it is not land
+        return water.empty
+
+
         
     def grid_coordinate(self, location):
         #convert a real-world coordinate to a grid coordinate
