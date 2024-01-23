@@ -27,10 +27,12 @@ class Pathing:
         self.grid_map = grid_map
 
     def is_land(lat, lon):
-        pass
+        point = Point(lon, lat)
+        return Pathing.land.contains(point).any()
 
     def is_sea(lat, lon):
-        pass
+        point = Point(lon, lat)
+        return Pathing.ocean.contains(point).any()
 
     
     def a_star(start, goal, grid):
