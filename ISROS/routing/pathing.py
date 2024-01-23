@@ -1,119 +1,72 @@
-import folium
-from folium.plugins import AntPath
-import networkx as nx
+import heapq
 
-
-class GridMap:
-    def __init__(self, bounds, resolution):
-        self.bounds = bounds # ((min_x, min_y), (max_x, max_y))
-        self.resolution = resolution
-        self.grid = self.create_grid()
-        self.graph = self.create_graph()
-
-    def create_grid(self):
-        # This function would discretize the map area into a grid based on the bounds and resolution
-        # Not implemented here, but would return a 2D array or similar structure representing the grid
-        pass
+class PriorityQueue:
+    def __init__(self):
+        self.elements = []
     
-    def create_graph(self):
-        # This function would convert the grid into a graph where each cell is a node and adjacent cells are linked by edges
-        # Not implemented here, but would return a graph structure, possibly using NetworkX or a similar library
-        pass
-
-
-class Pathing:
-    def __init__(self, location1, location2, grid_map):
-        self.location1 = location1
-        self.location2 = location2
-        self.grid_map = grid_map
-
-    def find_path(self):
-        try:
-            # Convert real-world coordinates to grid coordinates
-            start_node = self.grid_coordinate(self.location1)
-            end_node = self.grid_coordinate(self.location2)
-
-            # Use a pathfinding algorithm like A* to calculate the shortest path on the grid.
-            path = nx.astar_path(self.grid_map.graph, start_node, end_node)
-            # Convert the path back to real-world coordinates
-            real_path = [self.real_coordinate(node) for node in path]
-
-            return real_path
-        except Exception as e:
-            print(f"An error occurred in find_path: {e}")
-            # Handle the error or return a default value
-            return []
-        
-
-    def grid_coordinate(self, location):
-        # Convert a real-world coordinate to a grid coordinate
-        pass
-
-    def real_coordinate(self, grid_location):
-        # Convert a grid coordinate back to a real-world coordinate
-        pass
-
-    def get_map(self):
-        try:
-            path = self.find_path()
-            if not path:
-                raise ValueError("Unable to find path.")
-
-            # Create a folium map object, centered on the start of the path
-            m = folium.Map(location=self.location1, zoom_start=12)
-
-            # Add the grid to the map (assuming self.grid_map.resolution is the desired spacing)
-            self.add_grid_to_map(m, self.grid_map.resolution)
-
-            # Add markers for the start and end points
-            folium.Marker(self.location1, tooltip='Start').add_to(m)
-            folium.Marker(self.location2, tooltip='End').add_to(m)
-            
-            # Draw a path between the two points if path exists
-            if path:
-                AntPath(locations=path).add_to(m)
-
-            # Calculate the bounds of the path
-            bounds = self.calculate_bounds(path)
-
-            return m
-        
-        except Exception as e:
-            print(f"An error occurred in get_map: {e}")
-            # Return a default map
-            return folium.Map(location=self.location1, zoom_start=12)
+    def empty(self):
+        return len(self.elements) == 0
     
-    def add_grid_to_map(self, map_obj, grid_spacing):
-        min_x, min_y = self.bounds[0]
-        max_x, max_y = self.bounds[1]
+    def put(self, item, priority):
+        heapq.heappush(self.elements, (priority, item))
+    
+    def get(self):
+        return heapq.heappop(self.elements)[1]
+
+def heuristic(a, b):
+    (x1, y1) = a
+    (x2, y2) = b
+    return abs(x1 - x2) + abs(y1 - y2)
+
+def a_star_search(grid, start, goal):
+    frontier = PriorityQueue()
+    frontier.put(start, 0)
+    came_from = {}
+    cost_so_far = {}
+    came_from[start] = None
+    cost_so_far[start] = 0
+    
+    while not frontier.empty():
+        current = frontier.get()
         
-        # Calculate the number of grid lines needed
-        num_lines_x = int((max_x - min_x) / grid_spacing) + 1
-        num_lines_y = int((max_y - min_y) / grid_spacing) + 1
+        if current == goal:
+            break
+        
+        for next in neighbors(grid, current):
+            new_cost = cost_so_far[current] + 1  # Assumes a cost of 1 for moving to a neighbor
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
+                cost_so_far[next] = new_cost
+                priority = new_cost + heuristic(goal, next)
+                frontier.put(next, priority)
+                came_from[next] = current
+    
+    return reconstruct_path(came_from, start, goal)
 
-        # Draw the vertical grid lines
-        for i in range(num_lines_x):
-            x = min_x + i * grid_spacing
-            folium.PolyLine(
-                locations=[(min_y, x), (max_y, x)],
-                color='blue',
-                weight=1
-            ).add_to(map_obj)
+def neighbors(grid, current):
+    (x, y) = current
+    results = [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]
+    # Remove neighbors that are out-of-bounds or not walkable
+    results = filter(lambda point: 0 <= point[0] < len(grid) and 0 <= point[1] < len(grid[0]) and grid[point[0]][point[1]], results)
+    return results
 
-        # Draw the horizontal grid lines
-        for j in range(num_lines_y):
-            y = min_y + j * grid_spacing
-            folium.PolyLine(
-                locations=[(y, min_x), (y, max_x)],
-                color='blue',
-                weight=1
-            ).add_to(map_obj)
-            
-    def calculate_bounds(self, path):
-        # Assume path is a list of [lat, lng] points
-        latitudes = [point[0] for point in path]
-        longitudes = [point[1] for point in path]
-        min_lat, max_lat = min(latitudes), max(latitudes)
-        min_lng, max_lng = min(longitudes), max(longitudes)
-        # Return the bounds in the format [(south_west), (north_east)]
-        return [(min_lat, min_lng), (max_lat, max_lng)]
+def reconstruct_path(came_from, start, end):
+    current = end
+    path = []
+    while current != start:
+        path.append(current)
+        current = came_from[current]
+    path.append(start)  # optional
+    path.reverse()  # optional
+    return path
+
+# Example usage:
+if __name__ == "__main__":
+    # Create a grid where 'False' indicates an obstacle and 'True' indicates open space
+    grid = [[True] * 10 for _ in range(10)]
+    grid[1][2] = False  # Example obstacle
+
+    start = (0, 0)
+    goal = (9, 9)
+    path = a_star_search(grid, start, goal)
+    print("Path from start to goal:")
+    print(path)
