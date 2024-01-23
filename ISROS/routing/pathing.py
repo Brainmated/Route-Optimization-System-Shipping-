@@ -2,6 +2,8 @@ import folium
 from folium.plugins import AntPath
 import networkx as nx
 import osmnx as ox
+import geopandas as gpd
+from shapely.geometry import Point, Polygon
 
 
 class GridMap:
@@ -13,6 +15,11 @@ class GridMap:
 
 
 class Pathing:
+
+    land = gpd.read_file("data/ne_10m_land.shp")
+    ocean = gpd.read_file("data/ne_10m_ocean.shp")
+    coastline = gpd.read_file("data/ne_10m_coastline.shp")
+    
     def __init__(self, location1, location2, grid_map):
         self.location1 = location1
         self.location2 = location2
