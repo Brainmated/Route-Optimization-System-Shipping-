@@ -70,3 +70,15 @@ if __name__ == "__main__":
     path = a_star_search(grid, start, goal)
     print("Path from start to goal:")
     print(path)
+
+def lat_lon_to_grid(lat, lon, min_lat, min_lon, grid_size):
+    # Convert latitude and longitude to grid coordinates
+    grid_x = int((lat - min_lat) / grid_size)
+    grid_y = int((lon - min_lon) / grid_size)
+    return grid_x, grid_y
+
+def grid_to_lat_lon(grid_x, grid_y, min_lat, min_lon, grid_size):
+    # Convert grid coordinates back to latitude and longitude
+    lat = min_lat + (grid_x * grid_size)
+    lon = min_lon + (grid_y * grid_size)
+    return lat, lon
