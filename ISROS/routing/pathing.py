@@ -1,84 +1,34 @@
-import heapq
+import folium
+from folium.plugins import AntPath
+import networkx as nx
 
-class PriorityQueue:
-    def __init__(self):
-        self.elements = []
-    
-    def empty(self):
-        return len(self.elements) == 0
-    
-    def put(self, item, priority):
-        heapq.heappush(self.elements, (priority, item))
-    
-    def get(self):
-        return heapq.heappop(self.elements)[1]
 
-def heuristic(a, b):
-    (x1, y1) = a
-    (x2, y2) = b
-    return abs(x1 - x2) + abs(y1 - y2)
+class GridMap:
+    def __init__(self, bounds, resolution):
+        self.bounds = bounds # ((min_x, min_y), (max_x, max_y))
+        self.resolution = resolution
+        self.grid = self.create_grid()
+        self.graph = self.create_graph()
 
-def a_star_search(grid, start, goal):
-    frontier = PriorityQueue()
-    frontier.put(start, 0)
-    came_from = {}
-    cost_so_far = {}
-    came_from[start] = None
-    cost_so_far[start] = 0
-    
-    while not frontier.empty():
-        current = frontier.get()
+
+class Pathing:
+    def __init__(self, location1, location2, grid_map):
+        self.location1 = location1
+        self.location2 = location2
+        self.grid_map = grid_map
+
+    def is_land(lat, lon):
+        #in the making
+        pass
         
-        if current == goal:
-            break
-        
-        for next in neighbors(grid, current):
-            new_cost = cost_so_far[current] + 1  # Assumes a cost of 1 for moving to a neighbor
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
-                cost_so_far[next] = new_cost
-                priority = new_cost + heuristic(goal, next)
-                frontier.put(next, priority)
-                came_from[next] = current
+    def grid_coordinate(self, location):
+        #convert a real-world coordinate to a grid coordinate
+        pass
+
+    def real_coordinate(self, grid_location):
+        #convert a grid coordinate back to a real-world coordinate
+        pass
     
-    return reconstruct_path(came_from, start, goal)
-
-def neighbors(grid, current):
-    (x, y) = current
-    results = [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]
-    # Remove neighbors that are out-of-bounds or not walkable
-    results = filter(lambda point: 0 <= point[0] < len(grid) and 0 <= point[1] < len(grid[0]) and grid[point[0]][point[1]], results)
-    return results
-
-def reconstruct_path(came_from, start, end):
-    current = end
-    path = []
-    while current != start:
-        path.append(current)
-        current = came_from[current]
-    path.append(start)  # optional
-    path.reverse()  # optional
-    return path
-
-# Example usage:
-if __name__ == "__main__":
-    # Create a grid where 'False' indicates an obstacle and 'True' indicates open space
-    grid = [[True] * 10 for _ in range(10)]
-    grid[1][2] = False  # Example obstacle
-
-    start = (0, 0)
-    goal = (9, 9)
-    path = a_star_search(grid, start, goal)
-    print("Path from start to goal:")
-    print(path)
-
-def lat_lon_to_grid(lat, lon, min_lat, min_lon, grid_size):
-    # Convert latitude and longitude to grid coordinates
-    grid_x = int((lat - min_lat) / grid_size)
-    grid_y = int((lon - min_lon) / grid_size)
-    return grid_x, grid_y
-
-def grid_to_lat_lon(grid_x, grid_y, min_lat, min_lon, grid_size):
-    # Convert grid coordinates back to latitude and longitude
-    lat = min_lat + (grid_x * grid_size)
-    lon = min_lon + (grid_y * grid_size)
-    return lat, lon
+    def a_star(start, goal, grid):
+        #perform a_star pathing
+        pass

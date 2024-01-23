@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import SignUpForm
+from .pathing import Pathing, GridMap
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 from pathfinding.core.diagonal_movement import DiagonalMovement
@@ -10,7 +11,6 @@ from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 import folium
 import random
-import pathing
 import requests
 import numpy as np
 
@@ -47,52 +47,75 @@ def signup(request):
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
-def debug_view(request):
-    min_lat, max_lat = -90, 90  
-    min_lon, max_lon = -180, 180  
+def show_map(request):
+    min_x, min_y = (30.0, -120.0)
+    max_x, max_y = (50.0, -70.0) 
+    # Check if the form has been submitted
+    csv_filepath = 'E:/Programming in Python/applications/Thesis/ISROS/routing/data/ports.csv'
+    ports = get_ports_from_csv(csv_filepath)
+    grid_map = GridMap(bounds=((min_x, min_y), (max_x, max_y)), resolution=5)
 
+    if request.method == 'POST':
+        # Get locations from the POST request
+        location1 = [float(coord) for coord in request.POST['location1'].split(',')]
+        location2 = [float(coord) for coord in request.POST['location2'].split(',')]
+
+        folium_map = folium.Map(location=[0, 0], zoom_start=5)
+
+    # Pass the map to the template
+    map_html = folium_map._repr_html_()
+    context = {
+        'map': map_html,
+        'ports': ports,
+    }
+    return render(request, 'map.html', context)
+
+
+
+def debug_view(request):
+    # Define the bounds of your grid (replace with your specific grid bounds)
+    min_lat, max_lat = -90, 90  # Replace with the minimum and maximum latitude of your grid
+    min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
+    
+    # Create a map object centered on the geographic midpoint with a starting zoom level
     m = folium.Map(
         location=[(max_lat + min_lat) / 2, (max_lon + min_lon) / 2],
         zoom_start=2,
         min_zoom=2,
-        max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],
+        max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],  # This will restrict the view to the map's initial bounds
     )
     
+    # Define the actual bounds based on your grid limits
     bounds = [[min_lat, min_lon], [max_lat, max_lon]]
-    m.fit_bounds(bounds)
+    m.fit_bounds(bounds)  # Fit the map to the bounds
 
-    grid_size = 1  # Each grid cell corresponds to 1 degree
+    grid_size = 1
 
-    # ... [Code to draw grid lines] ...
+    # Create horizontal lines (latitude lines)
+    for lat in range(-90, 90, grid_size):
+        folium.PolyLine([(lat, -180), (lat, 180)], color="black", weight=0.1).add_to(m)
 
-    # 2 random locations
-    start_lat = random.uniform(min_lat, max_lat)
-    start_lon = random.uniform(min_lon, max_lon)
-    end_lat = random.uniform(min_lat, max_lat)
-    end_lon = random.uniform(min_lon, max_lon)
+    # Create vertical lines (longitude lines)
+    for lon in range(-180, 180, grid_size):
+        folium.PolyLine([(-90, lon), (90, lon)], color="black", weight=0.1).add_to(m)
 
-    # Convert lat/lon to grid coordinates
-    start_grid = pathing.lat_lon_to_grid(start_lat, start_lon, min_lat, min_lon, grid_size)
-    end_grid = pathing.lat_lon_to_grid(end_lat, end_lon, min_lat, min_lon, grid_size)
+    # Emphasize the boundaries (equator and prime meridian)
+    folium.PolyLine([(0, -180), (0, 180)], color="red", weight=0.3).add_to(m)  # Equator
+    folium.PolyLine([(-90, 0), (90, 0)], color="red", weight=0.3).add_to(m)  # Prime Meridian
 
-    # Define the grid for pathfinding
-    num_rows = int((max_lat - min_lat) / grid_size)
-    num_cols = int((max_lon - min_lon) / grid_size)
-    grid = [[True for _ in range(num_cols)] for _ in range(num_rows)]  # True indicates walkable
+    # Generate two random locations and draw a line between them
+    random_points = []
+    for _ in range(2):
+        random_lat = random.uniform(-90, 90)
+        random_lon = random.uniform(-180, 180)
+        random_points.append((random_lat, random_lon))  # Append the point to the list
+        folium.Marker([random_lat, random_lon]).add_to(m)  # Create a marker for the random location
+    
+    # Draw a line between the two random points
+    folium.PolyLine(random_points, color="blue", weight=2.5, opacity=0.8).add_to(m)
 
-    # Run A* algorithm
-    path = pathing.a_star_search(grid, start_grid, end_grid)
-
-    # Convert the path back to geographic coordinates
-    geo_path = [pathing.grid_to_lat_lon(point[0], point[1], min_lat, min_lon, grid_size) for point in path]
-
-    # Draw the path on the map
-    folium.PolyLine(geo_path, color="blue", weight=2.5, opacity=1).add_to(m)
-
-    # Add markers for start and end points
-    folium.Marker([start_lat, start_lon], icon=folium.Icon(color="green")).add_to(m)
-    folium.Marker([end_lat, end_lon], icon=folium.Icon(color="red")).add_to(m)
-
+    
+    # Render map to HTML
     map_html = m._repr_html_()
 
     context = {
