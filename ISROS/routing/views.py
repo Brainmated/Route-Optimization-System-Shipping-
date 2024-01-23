@@ -12,6 +12,7 @@ from pathfinding.finder.a_star import AStarFinder
 import folium
 import random
 import requests
+import json
 import numpy as np
 
 # Home page view
@@ -105,6 +106,7 @@ def debug_view(request):
 
     # Generate two random locations and draw a line between them
     random_points = []
+    feature_collection = {"type": "FeatureCollection", "features": []}
     for _ in range(2):
         random_lat = random.uniform(-90, 90)
         random_lon = random.uniform(-180, 180)
@@ -114,6 +116,16 @@ def debug_view(request):
     # Draw a line between the two random points
     folium.PolyLine(random_points, color="blue", weight=2.5, opacity=0.8).add_to(m)
 
+    # Create a GeoJSON feature for the point
+    feature = {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [random_lon, random_lat],
+        },
+        "properties": {},
+    }
+    feature_collection["features"].append(feature)
     
     # Render map to HTML
     map_html = m._repr_html_()
