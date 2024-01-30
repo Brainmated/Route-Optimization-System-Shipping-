@@ -53,6 +53,15 @@ class Map_Marking:
             popup='Random Ocean Point',
             icon=folium.Icon(color='green')
         ).add_to(m)
+
+    def print_column_headers(self):
+        # Print the column names for the land data
+        print("Land Data Columns:")
+        print(self.land_data.columns)
+
+        # Print the column names for the ocean data
+        print("Ocean Data Columns:")
+        print(self.ocean_data.columns)
     
 class Pathing:
 
