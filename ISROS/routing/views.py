@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import SignUpForm
-from .pathing import Pathing, GridMap
+from .pathing import Pathing, GridMap, Map_Marking
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 from pathfinding.core.diagonal_movement import DiagonalMovement
@@ -85,7 +85,12 @@ def debug_view(request):
         min_zoom=2,
         max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],  # This will restrict the view to the map's initial bounds
     )
-    
+
+    #Randoms from Map_Marking class
+    map_marker = Map_Marking("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_land.shp", 
+                             "E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_ocean.shp")
+    map_marker.mark_points(m)
+
     # Define the actual bounds based on your grid limits
     bounds = [[min_lat, min_lon], [max_lat, max_lon]]
     m.fit_bounds(bounds)  # Fit the map to the bounds
