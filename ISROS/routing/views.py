@@ -79,10 +79,12 @@ def debug_view(request):
     min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
     
     # Create a map object centered on the geographic midpoint with a starting zoom level
+    #Always Mercator Projection
     m = folium.Map(
         location=[(max_lat + min_lat) / 2, (max_lon + min_lon) / 2],
-        zoom_start=2,
-        min_zoom=2,
+        zoom_start=3,
+        min_zoom=3,
+        tiles="CartoDB dark_matter",
         max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],  # This will restrict the view to the map's initial bounds
     )
 

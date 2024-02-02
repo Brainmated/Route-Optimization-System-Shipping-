@@ -8,21 +8,31 @@
         html, body {
             height: 100%;
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
         }
         #map {
-            height: 2000px;
-            width: 1000px;
+            height: 100%;
+            width: 100%;
+            position: relative; /* Needed for absolute positioning of the info box */
+        }
+        #info-box {
+            position: absolute;
+            bottom: 100px; /* Distance from the bottom */
+            left: 100px; /* Distance from the left */
+            width: 23%;
+            height: 24%;
+            background: rgba(255, 255, 255, 0.3); /* Semi-transparent white */
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10; /* Ensure it sits above the map */
         }
     </style>
 </head>
 <body>
-    <h1>Debug Map View</h1>
     <div id="map">
         {{ map_html|safe }}
+        <div id="info-box">Information</div>
     </div>
 </body>
 </html>
