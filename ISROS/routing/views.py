@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
+from django.urls import reverse
 from .forms import SignUpForm
 from .pathing import Pathing, GridMap, Map_Marking
 from django.contrib.auth.views import LoginView, LogoutView
@@ -75,21 +76,18 @@ def show_map(request):
 
 @require_http_methods(["POST"])
 def simulate(request):
-    # Parse the body of the POST request
-    data = json.loads(request.body)
+    # Assuming you're processing the form data here
+    # data = request.POST or json.loads(request.body)
+    
+    # ... your simulation logic ...
 
-    # Simulate and process data here
-    # ...
-
-    # Returning a JsonResponse won't cause a page reload, so this won't hide the input-box.
-    # Instead, you should render the template with a flag to hide the input-box.
-    context = {
-        'hide_input_box': True,
-        # ... include other necessary context variables
-    }
-    return render(request, 'debug.html', context)
+    # If you want to hide the input-box after the form submission,
+    # you can redirect to the same page with a flag in the session
+    request.session['hide_input_box'] = True
+    return HttpResponseRedirect(reverse('debug')) # Replace 'debug' with your actual view name
 
 def debug_view(request):
+    hide_input_box = request.session.pop('hide_input_box', False)
     # Define the bounds of your grid (replace with your specific grid bounds)
     min_lat, max_lat = -90, 90  # Replace with the minimum and maximum latitude of your grid
     min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
@@ -156,6 +154,7 @@ def debug_view(request):
 
     context = {
         'map_html': map_html,
+        'hide_input_box': hide_input_box,
     }
 
     return render(request, 'debug.html', context)
