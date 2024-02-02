@@ -12,5 +12,6 @@ urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('map/', views.show_map, name='map'),
     path('debug/', views.debug_view, name='debug'),
+    path('simulate/', views.simulate, name="simulate"),
     # Add other paths as needed
 ]

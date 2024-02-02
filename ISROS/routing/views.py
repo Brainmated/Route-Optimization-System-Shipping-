@@ -13,6 +13,8 @@ import folium
 import random
 import requests
 import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 import numpy as np
 
 # Home page view
@@ -71,7 +73,14 @@ def show_map(request):
     }
     return render(request, 'map.html', context)
 
+@require_http_methods(["POST"])
+def simulate(request):
 
+    #Parse the body of the POST request
+    data = json.loads(request.body)
+
+    #test with user input, top left input-box
+    return JsonResponse({"success": True, "message": "Simulation Complete"})
 
 def debug_view(request):
     # Define the bounds of your grid (replace with your specific grid bounds)
