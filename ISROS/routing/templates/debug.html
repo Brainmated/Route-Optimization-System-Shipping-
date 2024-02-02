@@ -49,6 +49,7 @@
         <!-- Map HTML placeholder -->
         {{ map_html|safe }}
         <div id="info-box">Information</div>
+        {% if not hide_input_box %}
         <div id="input-box">
             <form method="post" action="{% url 'simulate' %}">
                 {% csrf_token %}
@@ -76,6 +77,7 @@
                 <button type="submit" name="action" value="simulate">Simulate</button>
             </form>
         </div>
+        {% endif %}
     </div>
 </body>
 </html>

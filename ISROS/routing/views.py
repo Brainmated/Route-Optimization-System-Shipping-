@@ -75,12 +75,19 @@ def show_map(request):
 
 @require_http_methods(["POST"])
 def simulate(request):
-
-    #Parse the body of the POST request
+    # Parse the body of the POST request
     data = json.loads(request.body)
 
-    #test with user input, top left input-box
-    return JsonResponse({"success": True, "message": "Simulation Complete"})
+    # Simulate and process data here
+    # ...
+
+    # Returning a JsonResponse won't cause a page reload, so this won't hide the input-box.
+    # Instead, you should render the template with a flag to hide the input-box.
+    context = {
+        'hide_input_box': True,
+        # ... include other necessary context variables
+    }
+    return render(request, 'your_template.html', context)
 
 def debug_view(request):
     # Define the bounds of your grid (replace with your specific grid bounds)
