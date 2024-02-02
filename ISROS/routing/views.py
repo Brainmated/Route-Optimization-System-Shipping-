@@ -87,7 +87,7 @@ def simulate(request):
         'hide_input_box': True,
         # ... include other necessary context variables
     }
-    return render(request, 'your_template.html', context)
+    return render(request, 'debug.html', context)
 
 def debug_view(request):
     # Define the bounds of your grid (replace with your specific grid bounds)
