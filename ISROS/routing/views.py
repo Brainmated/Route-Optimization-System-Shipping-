@@ -84,7 +84,7 @@ def debug_view(request):
         location=[(max_lat + min_lat) / 2, (max_lon + min_lon) / 2],
         zoom_start=3,
         min_zoom=3,
-        tiles="CartoDB dark_matter",
+        tiles="Cartodb Positron",
         max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],  # This will restrict the view to the map's initial bounds
     )
 
@@ -102,11 +102,11 @@ def debug_view(request):
 
     # Create horizontal lines (latitude lines)
     for lat in range(-90, 90, grid_size):
-        folium.PolyLine([(lat, -180), (lat, 180)], color="black", weight=0.1).add_to(m)
+        folium.PolyLine([(lat, -180), (lat, 180)], color="blue", weight=0.1).add_to(m)
 
     # Create vertical lines (longitude lines)
     for lon in range(-180, 180, grid_size):
-        folium.PolyLine([(-90, lon), (90, lon)], color="black", weight=0.1).add_to(m)
+        folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
     # Emphasize the boundaries (equator and prime meridian)
     folium.PolyLine([(0, -180), (0, 180)], color="red", weight=0.3).add_to(m)  # Equator
