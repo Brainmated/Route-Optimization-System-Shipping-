@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debug Map</title>
+    <title>Map with Information and Input Boxes</title>
     <style>
         html, body {
             height: 100%;
@@ -14,25 +14,77 @@
         #map {
             height: 100%;
             width: 100%;
-            position: relative; /* Needed for absolute positioning of the info box */
+            position: relative;
         }
-        #info-box {
+        #info-box, #input-box {
             position: absolute;
-            bottom: 100px; /* Distance from the bottom */
-            left: 100px; /* Distance from the left */
             width: 23%;
-            height: 24%;
             background: rgba(255, 255, 255, 0.3); /* Semi-transparent white */
             padding: 10px;
             border-radius: 5px;
-            z-index: 10; /* Ensure it sits above the map */
+            z-index: 10;
+        }
+        #info-box {
+            bottom: 100px; /* Distance from the bottom */
+            left: 100px; /* Distance from the left */
+            height: 24%;
+        }
+        #input-box {
+            top: 100px; /* Distance from the top */
+            left: 100px; /* Distance from the left */
+            height: 25%; /* Adjust height automatically based on content */
+        }
+        .add-location {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+        button {
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div id="map">
+        <!-- Map HTML placeholder -->
         {{ map_html|safe }}
         <div id="info-box">Information</div>
+        <div id="input-box">
+            <select name="locationA" id="locationA">
+                <option value="">Location A</option>
+                <!-- Add options here -->
+            </select>
+            <select name="locationB" id="locationB">
+                <option value="">Location B</option>
+                <!-- Add options here -->
+            </select>
+            <div class="add-location" onclick="addLocation()">+ Add more locations</div>
+            <select name="vesselType" id="vesselType">
+                <option value="">Vessel Type</option>
+                <!-- Add options here -->
+            </select>
+            <input type="number" name="weight" placeholder="Weight">
+            <select name="propellerCondition" id="propellerCondition">
+                <option value="">Propeller Condition</option>
+                <!-- Add options here -->
+            </select>
+            <input type="number" name="currentGasPrice" placeholder="Current Gas Price">
+            <button type="button" onclick="simulate()">Simulate</button>
+        </div>
     </div>
+
+    <script>
+        // Add more location inputs to the form
+        function addLocation() {
+            // Implementation of this function would need to dynamically create and append
+            // new location dropdowns or inputs to the '#input-box' element.
+        }
+
+        // Function to handle the simulation action
+        function simulate() {
+            // Implementation of this function would need to collect all the input values
+            // and perform the simulation or data fetching as required.
+        }
+    </script>
 </body>
 </html>
