@@ -106,6 +106,8 @@ def debug_view(request):
     map_marker = Map_Marking("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_land.shp", 
                              "E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_ocean.shp")
     map_marker.mark_points(m)
+
+    #------------check columns----------
     map_marker.print_column_headers()
 
     # Define the actual bounds based on your grid limits

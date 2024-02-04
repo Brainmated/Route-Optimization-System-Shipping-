@@ -39,7 +39,8 @@ class Map_Marking:
         # Get a random point from land and ocean data respectively
         land_point = self.get_random_point(self.land_data)
         ocean_point = self.get_random_point(self.ocean_data)
-
+        #print(land_point)
+        print(ocean_point)
         # Create a red marker for the random land point
         folium.Marker(
             [land_point[1], land_point[0]], 
@@ -62,7 +63,9 @@ class Map_Marking:
         # Print the column names for the ocean data
         print("Ocean Data Columns:")
         print(self.ocean_data.columns)
-    
+
+
+
 class Pathing:
 
     land = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_land.shp")
