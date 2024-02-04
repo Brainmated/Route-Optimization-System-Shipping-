@@ -34,7 +34,8 @@ class Map_Marking:
         # Assuming the geometry is Polygon, we'll return a random point from within
         return geom.representative_point().coords[0]
 
-
+    #---------------------------------THE SHP FILES ARE VALID----------------------------------
+    #---------------------------------CHECK WHY THE RANDOM POSITIONS ARENT THAT RANDOM---------
     def mark_points(self, m):
         # Get a random point from land and ocean data respectively
         land_point = self.get_random_point(self.land_data)
