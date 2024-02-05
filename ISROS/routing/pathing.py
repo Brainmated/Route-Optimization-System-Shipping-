@@ -52,7 +52,7 @@ class Map_Marking:
         # Create a green marker for the random ocean point
         folium.Marker(
             [coastline_point[1], coastline_point[0]], 
-            popup='Random Ocean Point',
+            popup='Random Coastline Point',
             icon=folium.Icon(color='green')
         ).add_to(m)
 
@@ -62,8 +62,8 @@ class Map_Marking:
         print(self.land_data.columns)
 
         # Print the column names for the ocean data
-        print("Ocean Data Columns:")
-        print(self.ocean_data.columns)
+        print("Coastline Data Columns:")
+        print(self.coastline_data.columns)
 
 
 
