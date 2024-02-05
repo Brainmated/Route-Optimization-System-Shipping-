@@ -107,9 +107,6 @@ def debug_view(request):
                              "E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_coastline.shp")
     map_marker.mark_points(m)
 
-    #------------check columns----------
-    map_marker.print_column_headers()
-
     # Define the actual bounds based on your grid limits
     bounds = [[min_lat, min_lon], [max_lat, max_lon]]
     m.fit_bounds(bounds)  # Fit the map to the bounds
