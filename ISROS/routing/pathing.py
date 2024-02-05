@@ -19,7 +19,7 @@ class Map_Marking:
 
     def __init__(self, land_shp, water_shp):
         self.land_data = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_land.shp")
-        self.ocean_data = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_ocean.shp")
+        self.coastline_data = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_coastline.shp")
 
     
     def get_random_point(self, data):
@@ -39,9 +39,9 @@ class Map_Marking:
     def mark_points(self, m):
         # Get a random point from land and ocean data respectively
         land_point = self.get_random_point(self.land_data)
-        ocean_point = self.get_random_point(self.ocean_data)
+        coastline_point = self.get_random_point(self.coastline_data)
         #print(land_point)
-        print(ocean_point)
+        print(coastline_point)
         # Create a red marker for the random land point
         folium.Marker(
             [land_point[1], land_point[0]], 
@@ -51,7 +51,7 @@ class Map_Marking:
 
         # Create a green marker for the random ocean point
         folium.Marker(
-            [ocean_point[1], ocean_point[0]], 
+            [coastline_point[1], coastline_point[0]], 
             popup='Random Ocean Point',
             icon=folium.Icon(color='green')
         ).add_to(m)
@@ -70,7 +70,6 @@ class Map_Marking:
 class Pathing:
 
     land = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_land.shp")
-    ocean = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_ocean.shp")
     coastline = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_coastline.shp")
 
 
@@ -84,9 +83,9 @@ class Pathing:
         point = Point(lon, lat)
         return Pathing.land.contains(point).any()
 
-    def is_sea(lat, lon):
+    def is_coastline(lat, lon):
         point = Point(lon, lat)
-        return Pathing.ocean.contains(point).any()
+        return Pathing.coastline.contains(point).any()
 
     
     def a_star(start, goal, grid):
