@@ -26,13 +26,21 @@ def index(request):
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get("username")
-        passowrd = request.POST.get("password")
+        password = request.POST.get("password")
+        button = request.POST.get("button")
 
-        if username == "admin" and passowrd == "password":
-            return redirect("debug.html")
-        else:
-            error_message = "Invalid username or password."
-            return render(request, "login.html", {"error_message": error_message})
+        if button == "login":
+            if username == "admin" and password == "password":
+                return redirect("debug.html")
+            else:
+                error_message = "Invalid username or password."
+                return render(request, "login.html", {"error_message": error_message})
+
+        elif button == "create_account":
+            # Handle create account button logic here
+            # Redirect to the appropriate view or template
+            return redirect("create_account.html")
+
     else:
         return render(request, "login.html")
 
