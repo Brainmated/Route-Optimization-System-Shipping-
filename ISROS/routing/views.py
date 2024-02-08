@@ -29,7 +29,7 @@ def login_view(request):
         passowrd = request.POST.get("password")
 
         if username == "admin" and passowrd == "password":
-            return redirect("debug")
+            return redirect("debug.html")
         else:
             error_message = "Invalid username or password."
             return render(request, "login.html", {"error_message": error_message})
