@@ -27,19 +27,16 @@ def login_view(request):
     if request.method == 'POST':
         username = request.POST.get("username")
         password = request.POST.get("password")
-        button = request.POST.get("button")
 
-        if button == "login":
-            if username == "admin" and password == "password":
-                return redirect("debug.html")
-            else:
-                error_message = "Invalid username or password."
-                return render(request, "login.html", {"error_message": error_message})
+        if username == "admin" and password == "password":
+            user = authenticate(request, username=username, password=password)
 
-        elif button == "create_account":
-            # Handle create account button logic here
-            # Redirect to the appropriate view or template
-            return redirect("create_account.html")
+            if user is not None:
+                login(request, user)
+                return redirect('debug/')
+
+        error_message = "Invalid username or password."
+        return render(request, "login.html", {"error_message": error_message})
 
     else:
         return render(request, "login.html")
@@ -96,6 +93,7 @@ def simulate(request):
     return HttpResponseRedirect(reverse('debug')) # Replace 'debug' with your actual view name
 
 def debug_view(request):
+
     hide_input_box = request.session.pop('hide_input_box', False)
     # Define the bounds of your grid (replace with your specific grid bounds)
     min_lat, max_lat = -90, 90  # Replace with the minimum and maximum latitude of your grid

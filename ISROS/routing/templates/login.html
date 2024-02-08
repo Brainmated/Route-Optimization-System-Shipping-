@@ -10,18 +10,24 @@
 </head>
 
 <body>
-    <div class="container">
-      <h1>Welcome to Intelligent Shipping</h1>
-      <form id="loginForm">
+  <div class="container">
+    <h1>Welcome to Intelligent Shipping</h1>
+    <form id="loginForm" action="{% url 'login' %}" method="POST">
+        {% csrf_token %}
         <label for="username">Username:</label>
-        <input type="text" id="username" name="username">
+        <input type="text" id="username" name="username" required>
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password">
+        <input type="password" id="password" name="password" required>
         <button type="submit">Login</button>
       </form>
-      <div class="account-creation">
-        Don't have an account? <a href="#">Create one!</a>
-      </div>
+      
+      {% if error_message %}
+        <p class="error">{{ error_message }}</p>
+      {% endif %}
+    <div class="account-creation">
+      Don't have an account? <a href="#">Create one!</a>
     </div>
-  </body>
+  </div>
+</body>
+
 </html>
