@@ -25,15 +25,16 @@ def index(request):
 # Login view
 def login_view(request):
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            if user:
-                login(request, user)
-                return redirect('index')
+        username = request.POST.get("username")
+        passowrd = request.POST.get("password")
+
+        if username == "admin" and passowrd == "password":
+            return redirect("debug")
+        else:
+            error_message = "Invalid username or password."
+            return render(request, "login.html", {"error_message": error_message})
     else:
-        form = AuthenticationForm()
-    return render(request, 'login.html', {'form': form})
+        return render(request, "login.html")
 
 # Logout view
 def logout_view(request):

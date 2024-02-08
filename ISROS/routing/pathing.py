@@ -37,19 +37,19 @@ class Map_Marking:
     #---------------------------------THE SHP FILES ARE VALID----------------------------------
     #---------------------------------CHECK WHY THE RANDOM POSITIONS ARENT THAT RANDOM---------
     def mark_points(self, m):
-        # Get a random point from land and ocean data respectively
+        #Get a random point from land and ocean data respectively
         land_point = self.get_random_point(self.land_data)
         coastline_point = self.get_random_point(self.coastline_data)
         #print(land_point)
         print(coastline_point)
-        # Create a red marker for the random land point
+        #Create a red marker for the random land point
         folium.Marker(
             [land_point[1], land_point[0]], 
             popup='Random Land Point',
             icon=folium.Icon(color='red')
         ).add_to(m)
 
-        # Create a green marker for the random ocean point
+        #Create a green marker for the random coastline point
         folium.Marker(
             [coastline_point[1], coastline_point[0]], 
             popup='Random Coastline Point',
