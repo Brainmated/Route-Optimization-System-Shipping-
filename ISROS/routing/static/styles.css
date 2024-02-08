@@ -1,8 +1,10 @@
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f7f7f7;
-    margin: 0;
-    padding: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #f2f2f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
 .container{
@@ -15,6 +17,7 @@ body {
 }
 
 h1 {
+    text-align: center;
     color: #333;
     margin-bottom: 20px;
 }
