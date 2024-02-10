@@ -82,3 +82,6 @@ class Pathing:
     def a_star(start, goal, grid):
         #perform a_star pathing
         pass
+
+    def get_path_coordinates():
+        pass
