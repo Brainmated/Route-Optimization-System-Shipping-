@@ -80,18 +80,6 @@ def show_map(request):
     }
     return render(request, 'map.html', context)
 
-@require_http_methods(["POST"])
-def simulate(request):
-    # Assuming you're processing the form data here
-    # data = request.POST or json.loads(request.body)
-    
-    # ... your simulation logic ...
-
-    # If you want to hide the input-box after the form submission,
-    # you can redirect to the same page with a flag in the session
-    request.session['hide_input_box'] = True
-    return HttpResponseRedirect(reverse('debug')) # Replace 'debug' with your actual view name
-
 def debug_view(request):
 
     hide_input_box = request.session.pop('hide_input_box', False)
