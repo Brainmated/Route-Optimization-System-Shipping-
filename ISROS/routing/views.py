@@ -8,9 +8,6 @@ from .forms import SignUpForm
 from .pathing import Pathing, GridMap, Map_Marking
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
-from pathfinding.core.diagonal_movement import DiagonalMovement
-from pathfinding.core.grid import Grid
-from pathfinding.finder.a_star import AStarFinder
 import folium
 import os
 import random
