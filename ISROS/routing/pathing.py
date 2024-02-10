@@ -18,8 +18,9 @@ class GridMap:
 class Map_Marking:
 
     def __init__(self, land_shp, water_shp):
-        self.land_data = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_land.shp")
-        self.coastline_data = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_coastline.shp")
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.land_data = gpd.read_file("data/ne_10m_land.shp")
+        self.coastline_data = gpd.read_file("data/ne_10m_coastline.shp")
 
     
     def get_random_point(self, data):
@@ -60,8 +61,9 @@ class Map_Marking:
 
 class Pathing:
 
-    land = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_land.shp")
-    coastline = gpd.read_file("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_coastline.shp")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    land = gpd.read_file("data/ne_10m_land.shp")
+    coastline = gpd.read_file("data/ne_10m_coastline.shp")
 
 
     def __init__(self, location1, location2, grid_map):
