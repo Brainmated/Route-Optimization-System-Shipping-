@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
 from django.urls import reverse
 from .forms import SignUpForm
 from .pathing import Pathing, GridMap, Map_Marking
@@ -18,28 +19,20 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import numpy as np
 
-# Home page view
-def index(request):
-    return render(request, 'index.html')
-
 # Login view
 def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get("username")
-        password = request.POST.get("password")
 
-        if username == "admin" and password == "password":
-            user = authenticate(request, username=username, password=password)
-
-            if user is not None:
-                login(request, user)
-                return redirect('debug/')
-
-        error_message = "Invalid username or password."
-        return render(request, "login.html", {"error_message": error_message})
-
-    else:
-        return render(request, "login.html")
+    if request.method == "POST":
+        username = request.POST["username"]
+        password = request.POST["password"]
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return render(request, "debug")
+        
+        else:
+            return render(request, "login")
+        
 
 # Logout view
 def logout_view(request):

@@ -13,6 +13,7 @@ body {
 
 .container {
     position: relative;
+    display: inline-block;
     width: 400px;
     padding: 40px;
     background-color: rgba(255, 255, 255, 0.7);
@@ -21,6 +22,27 @@ body {
     z-index: 1;
     margin-left: 1300px;
   }
+
+.text {
+    font-size: 5em;
+    letter-spacing: 10px;
+    font-family: monospace;
+    border-right: 5px solid;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    animation:
+        typing 2s,
+        cursor .4s step-end infinite alternate;
+}
+
+@keyframes cursor {
+    50% { border-color: transparent;}
+}
+
+@keyframes typing {
+    from {width:0}
+}
 
 h1 {
     text-align: center;
