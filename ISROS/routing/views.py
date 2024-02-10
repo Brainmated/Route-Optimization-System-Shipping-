@@ -12,6 +12,7 @@ from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 import folium
+import os
 import random
 import requests
 import json
@@ -75,6 +76,14 @@ def show_map(request):
 
 def debug_view(request):
 
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_filepath = os.path.join(script_dir, "ports.csv")
+    
+    ports = get_ports_from_csv(csv_filepath)
+    land_shp = os.path.join(script_dir, "ne_10m_land.shp")
+    coastline_shp = os.path.join(script_dir, "ne_10m_coastline.shp")
+
+
     hide_input_box = request.session.pop('hide_input_box', False)
     # Define the bounds of your grid (replace with your specific grid bounds)
     min_lat, max_lat = -90, 90  # Replace with the minimum and maximum latitude of your grid
@@ -91,8 +100,7 @@ def debug_view(request):
     )
 
     #Randoms from Map_Marking class
-    map_marker = Map_Marking("E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_land.shp", 
-                             "E:/Programming in Python/applications/Thesis/ISROS/routing/data/ne_10m_coastline.shp")
+    map_marker = Map_Marking(land_shp, coastline_shp)
     map_marker.mark_points(m)
 
     # Define the actual bounds based on your grid limits
