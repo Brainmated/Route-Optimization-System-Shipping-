@@ -11,5 +11,6 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(next_page='index'), name='logout'),
     path('signup/', views.signup, name='signup'),
     path('debug/', views.debug_view, name='debug'),
+    path('simulate/', views.simulate, name="simulate"),
     # Add other paths as needed
 ]
