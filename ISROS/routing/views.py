@@ -52,11 +52,11 @@ def signup(request):
 def debug_view(request):
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_filepath = os.path.join(script_dir, "data", "ports.csv")
+    csv_filepath = os.path.join(script_dir, "routing", "data", "ports.csv")
     
     ports = get_ports_from_csv(csv_filepath)
-    land_shp = os.path.join(script_dir, "data", "ne_10m_land.shp")
-    coastline_shp = os.path.join(script_dir, "data", "ne_10m_coastline.shp")
+    land_shp = os.path.join(script_dir, "routing", "data", "ne_10m_land.shp")
+    coastline_shp = os.path.join(script_dir, "routing", "data", "ne_10m_coastline.shp")
 
 
     hide_input_box = request.session.pop('hide_input_box', False)

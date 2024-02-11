@@ -1,85 +1,111 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #f2f2f2;
     margin: 0;
-    height: 100vh;
     display: flex;
-    justify-content: center;
-    align-items: center;
+  }
+  
+  .background-image {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background-image: url("/static/background-image.jpeg");
     background-size: cover;
     background-position: center;
+    z-index: -1;
   }
-
-.container {
+  
+  .container {
     position: relative;
-    display: inline-block;
     width: 400px;
     padding: 40px;
     background-color: rgba(255, 255, 255, 0.7);
     border-radius: 5px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    z-index: 1;
-    margin-left: 1300px;
+    margin-right: auto;
   }
-
-.text {
-    font-size: 5em;
-    letter-spacing: 10px;
+  
+  .typewriter {
+    position: relative;
+    top: 40px;
+    left: 400px;
+    width: 20px;
+    height: 100%;
+  }
+  
+  .text {
+    font-size: 20px;
     font-family: monospace;
-    border-right: 5px solid;
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    animation:
-        typing 2s,
-        cursor .4s step-end infinite alternate;
-}
-
-@keyframes cursor {
-    50% { border-color: transparent;}
-}
-
-@keyframes typing {
-    from {width:0}
-}
-
-h1 {
+    white-space: pre-wrap;
+    margin: 0;
+    padding-right: 10px;
+    animation: typing 2s steps(30, end), blink-caret .5s step-end infinite;
+  }
+  
+  @keyframes typing {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+  
+  @keyframes blink-caret {
+    from,
+    to {
+      border-color: transparent;
+    }
+    50% {
+      border-color: #000;
+    }
+  }
+  
+  .cursor {
+    display: inline-block;
+    vertical-align: middle;
+    width: 1.5px;
+    height: 20px;
+    background-color: #000;
+    animation: blink 1s infinite;
+  }
+  
+  @keyframes blink {
+    from,
+    to {
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  
+  h1 {
     text-align: center;
     color: #333;
     margin-bottom: 20px;
-}
-
-a {
-    display: inline-block;
-    margin-top: 10px;
-    color: #007bff;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-form {
+  }
+  
+  form {
     display: flex;
     flex-direction: column;
   }
-
-label{
+  
+  label {
     margin-bottom: 5px;
-}
-
-input[type="text"],
-input[type="password"] {
+  }
+  
+  input[type="text"],
+  input[type="password"] {
     width: 100%;
     padding: 10px;
     margin-bottom: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
-}
-
-button[type="submit"] {
+  }
+  
+  button[type="submit"] {
     width: 100%;
     padding: 10px;
     border: none;
@@ -87,23 +113,13 @@ button[type="submit"] {
     background-color: #4CAF50;
     color: white;
     cursor: pointer;
-}
-
-button[type="submit"]:hover{
-    background-color: 45a049;
-}
-
-.background-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -1;
   }
-
-.account-creation {
+  
+  button[type="submit"]:hover {
+    background-color: #45a049;
+  }
+  
+  .account-creation {
     text-align: center;
     margin-top: 20px;
   }

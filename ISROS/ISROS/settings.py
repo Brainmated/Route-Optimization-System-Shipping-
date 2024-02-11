@@ -120,7 +120,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    'E:/Programming in Python/applications/Thesis/ISROS/routing/static',
+    os.path.join(BASE_DIR, 'routing/static'),
 ]
 
 # Default primary key field type
