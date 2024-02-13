@@ -89,7 +89,7 @@ class Pathing:
     
     def is_ocean():
         pass
-    
+
     @staticmethod
     def is_coast():
         lines = []
@@ -105,6 +105,7 @@ class Pathing:
                     # Ensure coords are in (longitude, latitude) order
                     coords = [(x, y) for x, y in coords]
                     lines.append(coords)
+            print(Pathing.coastline.crs)
         return lines
 
     
