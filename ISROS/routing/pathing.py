@@ -79,7 +79,8 @@ class Pathing:
     
     def is_ocean():
         pass
-
+    
+    #------------------------SUCCESS-------------------------------------------------------------
     @staticmethod
     def is_coast():
         lines = []
