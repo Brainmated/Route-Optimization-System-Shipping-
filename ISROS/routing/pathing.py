@@ -67,6 +67,7 @@ class Pathing:
     coastline = gpd.read_file("routing/data/ne_10m_coastline.shp")
 
 
+    
     def __init__(self, location1, location2, grid_map):
         self.location1 = location1
         self.location2 = location2
@@ -74,18 +75,7 @@ class Pathing:
 
     @staticmethod
     def is_land():
-        lines = []
-        print("land test")
-        for _, row in Pathing.land.iterrows():
-            if isinstance(row['geometry'], (LineString, MultiLineString)):
-                if isinstance(row['geometry'], LineString):
-                    # Extract the coordinates of the LineString
-                    coords = list(row['geometry'].coords)
-                else:
-                    # Flatten the MultiLineString into a list of coordinates
-                    coords = [pt for line in row['geometry'] for pt in list(line.coords)]
-                lines.append(coords)
-        return lines
+        pass
     
     def is_ocean():
         pass
@@ -93,21 +83,21 @@ class Pathing:
     @staticmethod
     def is_coast():
         lines = []
+        # Iterate through each row of the coastline GeoDataFrame
         for _, row in Pathing.coastline.iterrows():
+            # Check if the geometry is a LineString
             if isinstance(row['geometry'], LineString):
-                coords = list(row['geometry'].coords)
-                # Ensure coords are in (longitude, latitude) order
-                coords = [(x, y) for x, y in coords]
+                # Swap the coordinates from (lon, lat) to (lat, lon)
+                coords = [(y, x) for x, y in row['geometry'].coords]
                 lines.append(coords)
+            # Check if the geometry is a MultiLineString
             elif isinstance(row['geometry'], MultiLineString):
+                # Extract coordinates from each component LineString
                 for line in row['geometry']:
-                    coords = list(line.coords)
-                    # Ensure coords are in (longitude, latitude) order
-                    coords = [(x, y) for x, y in coords]
+                    # Swap the coordinates from (lon, lat) to (lat, lon)
+                    coords = [(y, x) for x, y in line.coords]
                     lines.append(coords)
-            print(Pathing.coastline.crs)
         return lines
-
     
     def a_star(start, goal, grid):
         #perform a_star pathing
