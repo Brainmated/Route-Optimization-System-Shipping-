@@ -1,5 +1,6 @@
 import folium
 from folium.plugins import AntPath
+from shapely.geometry import Point, LineString, MultiLineString
 import os
 import networkx as nx
 import random
@@ -76,9 +77,19 @@ class Pathing:
         point = Point(lon, lat)
         return Pathing.land.contains(point).any()
 
-    def is_coastline(lat, lon):
-        point = Point(lon, lat)
-        return Pathing.coastline.contains(point).any()
+    @staticmethod
+    def is_coast():
+        lines = []
+        for _, row in Pathing.coastline.iterrows():
+            if isinstance(row['geometry'], (LineString, MultiLineString)):
+                if isinstance(row['geometry'], LineString):
+                    # Extract the coordinates of the LineString
+                    coords = list(row['geometry'].coords)
+                else:
+                    # Flatten the MultiLineString into a list of coordinates
+                    coords = [pt for line in row['geometry'] for pt in list(line.coords)]
+                lines.append(coords)
+        return lines
 
     
     def a_star(start, goal, grid):

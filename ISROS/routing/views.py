@@ -70,7 +70,9 @@ def debug_view(request):
     ports = get_ports_from_csv(csv_filepath)
     land_shp = os.path.join(script_dir, "data", "ne_10m_land.shp")
     coastline_shp = os.path.join(script_dir, "data", "ne_10m_coastline.shp")
-
+    
+    #test coords of coastline, 1st parameter for pathing
+    coast_coords = Pathing.is_coast()
 
     hide_input_box = request.session.pop('hide_input_box', False)
     # Define the bounds of your grid (replace with your specific grid bounds)
@@ -121,6 +123,9 @@ def debug_view(request):
     # Draw a line between the two random points
     folium.PolyLine(random_points, color="blue", weight=2.5, opacity=0.8).add_to(m)
 
+    #--------Coastline Test------------------
+    for coords in coast_coords:
+        folium.PolyLine(coords, color="red", weight=2.5, opacity=0.8).add_to(m)
     # Create a GeoJSON feature for the point
     feature = {
         "type": "Feature",
