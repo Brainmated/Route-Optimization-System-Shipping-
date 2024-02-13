@@ -72,11 +72,23 @@ class Pathing:
         self.location2 = location2
         self.grid_map = grid_map
 
-    def is_land(lat, lon):
-        
-        point = Point(lon, lat)
-        return Pathing.land.contains(point).any()
-
+    @staticmethod
+    def is_land():
+        lines = []
+        print("land test")
+        for _, row in Pathing.land.iterrows():
+            if isinstance(row['geometry'], (LineString, MultiLineString)):
+                if isinstance(row['geometry'], LineString):
+                    # Extract the coordinates of the LineString
+                    coords = list(row['geometry'].coords)
+                else:
+                    # Flatten the MultiLineString into a list of coordinates
+                    coords = [pt for line in row['geometry'] for pt in list(line.coords)]
+                lines.append(coords)
+        return lines
+    
+    def is_ocean():
+        pass
     @staticmethod
     def is_coast():
         lines = []
@@ -90,6 +102,7 @@ class Pathing:
                     coords = [pt for line in row['geometry'] for pt in list(line.coords)]
                 lines.append(coords)
         return lines
+        pass
 
     
     def a_star(start, goal, grid):

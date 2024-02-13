@@ -71,8 +71,10 @@ def debug_view(request):
     land_shp = os.path.join(script_dir, "data", "ne_10m_land.shp")
     coastline_shp = os.path.join(script_dir, "data", "ne_10m_coastline.shp")
     
-    #test coords of coastline, 1st parameter for pathing
+    #test coords of land, 1st parameter for pathing
     coast_coords = Pathing.is_coast()
+
+    #-------------------------
 
     hide_input_box = request.session.pop('hide_input_box', False)
     # Define the bounds of your grid (replace with your specific grid bounds)
