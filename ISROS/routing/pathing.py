@@ -89,20 +89,23 @@ class Pathing:
     
     def is_ocean():
         pass
+    
     @staticmethod
     def is_coast():
         lines = []
         for _, row in Pathing.coastline.iterrows():
-            if isinstance(row['geometry'], (LineString, MultiLineString)):
-                if isinstance(row['geometry'], LineString):
-                    # Extract the coordinates of the LineString
-                    coords = list(row['geometry'].coords)
-                else:
-                    # Flatten the MultiLineString into a list of coordinates
-                    coords = [pt for line in row['geometry'] for pt in list(line.coords)]
+            if isinstance(row['geometry'], LineString):
+                coords = list(row['geometry'].coords)
+                # Ensure coords are in (longitude, latitude) order
+                coords = [(x, y) for x, y in coords]
                 lines.append(coords)
+            elif isinstance(row['geometry'], MultiLineString):
+                for line in row['geometry']:
+                    coords = list(line.coords)
+                    # Ensure coords are in (longitude, latitude) order
+                    coords = [(x, y) for x, y in coords]
+                    lines.append(coords)
         return lines
-        pass
 
     
     def a_star(start, goal, grid):
