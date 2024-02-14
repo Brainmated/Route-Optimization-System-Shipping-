@@ -106,3 +106,7 @@ class Pathing:
 
     def get_path_coordinates():
         pass
+
+    def get_restrictions():
+        #https://github.com/genthalili/searoute-py/issues/25
+        pass
