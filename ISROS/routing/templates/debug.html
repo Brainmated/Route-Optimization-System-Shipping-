@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Map with Information and Input Boxes</title>
@@ -50,25 +51,28 @@
         {{ map_html|safe }}
         <div id="info-box">Information</div>
         {% if not hide_input_box %}
-        <div id="input-box" style="display: flex; justify-content: start; gap: 20px;"">
+        <div id="input-box" class="input-container">
             <form method="post" action="{% url 'simulate' %}">
                 {% csrf_token %}
-                <div style ="display: flex; flex-direction: column; margin-right: 20px;"></div>
-                <label for="locationA">Location A:</label>
-                <select name="locationA" id="locationA">
-                    <option value="">Select Location A</option>
-                    {% for port in ports %}
-                        <option value="{{port.name}}">{{port.name}}</option>
-                    {% endfor %}
-                </select>
-                <div style ="display: flex; flex-direction: column; margin-right: 20px;"></div>
-                <label for="locationB">Location B:</label>
-                <select name="locationB" id="locationB">
-                    <option value="">Location B</option>
-                    {% for port in ports %}
-                        <option value="{{port.name}}">{{port.name}}</option>
-                    {% endfor %}
-                </select>
+                <div class="dropdown-container">
+                    <label for="locationA">Location A:</label>
+                    <select name="locationA" id="locationA">
+                        <option value="">Select Location A</option>
+                        {% for port in ports %}
+                            <option value="{{ port.name }}">{{ port.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="dropdown-container">
+                    <label for="locationB">Location B:</label>
+                    <select name="locationB" id="locationB">
+                        <option value="">Select Location B</option>
+                        {% for port in ports %}
+                            <option value="{{ port.name }}">{{ port.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <!-- Note: You would need to implement addLocation in Django views if it's supposed to change the form -->
                 <div class="add-location">+ Add more locations</div>
                 <select name="vesselType" id="vesselType">
