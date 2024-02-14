@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.urls import reverse
 from .forms import SignUpForm
 from .pathing import Pathing, GridMap, Map_Marking
+from .ports import parse_ports
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 import folium
@@ -67,7 +68,7 @@ def debug_view(request):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_filepath = os.path.join(script_dir, "data", "ports.csv")
     
-    ports = get_ports_from_csv(csv_filepath)
+    ports = parse_ports()
     land_shp = os.path.join(script_dir, "data", "ne_10m_land.shp")
     coastline_shp = os.path.join(script_dir, "data", "ne_10m_coastline.shp")
     
@@ -145,6 +146,7 @@ def debug_view(request):
     context = {
         'map_html': map_html,
         'hide_input_box': hide_input_box,
+        'ports': ports,
     }
 
     return render(request, 'debug.html', context)

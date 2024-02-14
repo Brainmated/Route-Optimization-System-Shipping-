@@ -50,16 +50,24 @@
         {{ map_html|safe }}
         <div id="info-box">Information</div>
         {% if not hide_input_box %}
-        <div id="input-box">
+        <div id="input-box" style="display: flex; justify-content: start; gap: 20px;"">
             <form method="post" action="{% url 'simulate' %}">
                 {% csrf_token %}
+                <div style ="display: flex; flex-direction: column; margin-right: 20px;"></div>
+                <label for="locationA">Location A:</label>
                 <select name="locationA" id="locationA">
-                    <option value="">Location A</option>
-                    <!-- Add options here -->
+                    <option value="">Select Location A</option>
+                    {% for port in ports %}
+                        <option value="{{port.name}}">{{port.name}}</option>
+                    {% endfor %}
                 </select>
+                <div style ="display: flex; flex-direction: column; margin-right: 20px;"></div>
+                <label for="locationB">Location B:</label>
                 <select name="locationB" id="locationB">
                     <option value="">Location B</option>
-                    <!-- Add options here -->
+                    {% for port in ports %}
+                        <option value="{{port.name}}">{{port.name}}</option>
+                    {% endfor %}
                 </select>
                 <!-- Note: You would need to implement addLocation in Django views if it's supposed to change the form -->
                 <div class="add-location">+ Add more locations</div>
