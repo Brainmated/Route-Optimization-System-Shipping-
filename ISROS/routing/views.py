@@ -99,10 +99,6 @@ def debug_view(request):
         max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],  # This will restrict the view to the map's initial bounds
     )
 
-    #Randoms from Map_Marking class
-    map_marker = Map_Marking(land_shp, coastline_shp)
-    map_marker.mark_points(m)
-
     # Define the actual bounds based on your grid limits
     bounds = [[min_lat, min_lon], [max_lat, max_lon]]
     m.fit_bounds(bounds)  # Fit the map to the bounds
@@ -149,7 +145,7 @@ def debug_view(request):
     }
     feature_collection["features"].append(feature)
     '''
-    
+
     # Render map to HTML
     map_html = m._repr_html_()
 
