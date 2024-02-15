@@ -125,7 +125,37 @@ body {
   }
 
 /*---------------------------DEBUG-----------------------*/
-
+#map {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+#info-box, #input-box {
+  position: absolute;
+  width: 23%;
+  background: rgba(255, 255, 255, 0.4); /* Semi-transparent white */
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 10;
+}
+#info-box {
+  bottom: 100px; /* Distance from the bottom */
+  left: 100px; /* Distance from the left */
+  height: 24%;
+}
+#input-box {
+  top: 100px; /* Distance from the top */
+  left: 100px; /* Distance from the left */
+  height: auto; /* Adjust height automatically based on content */
+}
+.add-location {
+  cursor: pointer;
+  color: blue;
+  text-decoration: underline;
+}
+button {
+  margin-top: 10px;
+}
 
 .input-container {
     display: flex;
@@ -142,5 +172,14 @@ body {
 .dropdown-container:last-child {
     margin-right: 0;
 }
-  
+
+.locations-container {
+  display: flex;
+  justify-content: start;
+  gap: 10px;
+}
+
+.location-dropdown {
+  flex-basis: 50%;
+}
   
