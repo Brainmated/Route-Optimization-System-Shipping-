@@ -131,6 +131,11 @@ def debug_view(request):
 
 @require_http_methods(["POST"])
 def simulate(request):
+
+    min_lat, max_lat = -90, 90  # Replace with the minimum and maximum latitude of your grid
+    min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
+    grid_size = 1
+
     # Extract location A and B from the POST data
     loc_a_name = request.POST.get("locationA")
     loc_b_name = request.POST.get("locationB")
@@ -154,8 +159,18 @@ def simulate(request):
     zoom_start=3,
     min_zoom=3,
     tiles="Cartodb Positron",
-    max_bounds=True
+    max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],
 )
+    bounds = [[min_lat, min_lon], [max_lat, max_lon]]
+    m.fit_bounds(bounds)  # Fit the map to the bounds
+    
+    # Create horizontal lines (latitude lines)
+    for lat in range(-90, 90, grid_size):
+        folium.PolyLine([(lat, -180), (lat, 180)], color="blue", weight=0.1).add_to(m)
+
+    # Create vertical lines (longitude lines)
+    for lon in range(-180, 180, grid_size):
+        folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
     # Draw the path from loc_a to loc_b (assuming Pathing.straight_path is a method you have defined)
     Pathing.straight_path(
