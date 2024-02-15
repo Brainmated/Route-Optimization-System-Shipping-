@@ -49,27 +49,6 @@ def signup(request):
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
-@require_http_methods(["POST"])
-def simulate(request):
-    loc_a_name = request.POST.get("locationA")
-    loc_b_name = request.POST.get("locationB")
-
-    ports = parse_ports()
-    loc_a = next((item for item in ports if item["name"] == loc_a_name), None)
-    loc_b = next((item for item in ports if item["name"] == loc_b_name), None)
-
-    #conver lat and lot to float for tuples
-
-    loc_a_coords = (float(loc_a["latitude"]), float(loc_a["longitude"]))
-    loc_b_coords = (float(loc_b["latitude"]), float(loc_b["longitude"]))
-
-    m = request.session.get("map", folium.Map(location=[0, 0], zoom_start=2))
-    
-    #draw line
-    Pathing.straight_path(m, loc_a_coords, loc_b_coords)
-
-    #redirect
-    return HttpResponseRedirect(reverse("debug"))
 def debug_view(request):
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -156,3 +135,40 @@ def debug_view(request):
     }
 
     return render(request, 'debug.html', context)
+
+@require_http_methods(["POST"])
+def simulate(request):
+    loc_a_name = request.POST.get("locationA")
+    loc_b_name = request.POST.get("locationB")
+
+    ports = parse_ports()
+    loc_a = next((item for item in ports if item["name"] == loc_a_name), None)
+    loc_b = next((item for item in ports if item["name"] == loc_b_name), None)
+
+    if not loc_a or not loc_b:
+        # Handle the case where the locations are not found
+        messages.error(request, "Locations not found.")
+        return redirect('debug')
+
+    loc_a_coords = (float(loc_a["latitude"]), float(loc_a["longitude"]))
+    loc_b_coords = (float(loc_b["latitude"]), float(loc_b["longitude"]))
+
+    # Create a new map for the simulation
+    m = folium.Map(location=[(loc_a_coords[0] + loc_b_coords[0]) / 2, 
+                             (loc_a_coords[1] + loc_b_coords[1]) / 2], zoom_start=2)
+
+    # Draw the path
+    Pathing.straight_path(m, loc_a_coords, loc_b_coords)
+
+    # Generate the map HTML
+    map_html = m._repr_html_()
+
+    # Instead of storing the map object, store the necessary data to recreate it
+    map_config = {
+        'center': [(loc_a_coords[0] + loc_b_coords[0]) / 2,
+                  (loc_a_coords[1] + loc_b_coords[1]) / 2],
+        'zoom_start': 2
+    }
+    request.session['map_config'] = map_config
+
+    return render(request, 'debug.html', {'map_html': map_html})
