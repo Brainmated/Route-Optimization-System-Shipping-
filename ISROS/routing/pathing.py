@@ -23,18 +23,6 @@ class Map_Marking:
         self.land_data = gpd.read_file("routing/data/ne_10m_land.shp")
         self.coastline_data = gpd.read_file("routing/data/ne_10m_coastline.shp")
 
-    
-    def get_random_point(self, data):
-        random_feature = data.sample(1)
-        geom = random_feature.geometry.iloc[0]
-
-        # Handle MultiPolygon geometries
-        if geom.geom_type == 'MultiPolygon':
-            # Choose a random Polygon from the MultiPolygon
-            geom = random.choice([poly for poly in geom.geoms])
-        
-        # Assuming the geometry is Polygon, we'll return a random point from within
-        return geom.representative_point().coords[0]
 
     #---------------------------------THE SHP FILES ARE VALID----------------------------------
     #---------------------------------CHECK WHY THE RANDOM POSITIONS ARENT THAT RANDOM---------
@@ -43,7 +31,7 @@ class Map_Marking:
         land_point = self.get_random_point(self.land_data)
         coastline_point = self.get_random_point(self.coastline_data)
         #print(land_point)
-        print(coastline_point)
+        #print(coastline_point)
         #Create a red marker for the random land point
         folium.Marker(
             [land_point[1], land_point[0]], 
@@ -100,6 +88,11 @@ class Pathing:
                     lines.append(coords)
         return lines
     
+    @staticmethod
+    def straight_path(m, location1, location2):
+        folium.PolyLine([location1, location2], color="blue", weight=2.5, opacity=1).add_to(m)
+        m.fit_bounds([location1, location2])
+
     def a_star(start, goal, grid):
         #perform a_star pathing
         pass

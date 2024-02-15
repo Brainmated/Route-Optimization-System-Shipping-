@@ -51,18 +51,25 @@ def signup(request):
 
 @require_http_methods(["POST"])
 def simulate(request):
-    # Assuming you're processing the form data here
-    # data = request.POST or json.loads(request.body)
+    loc_a_name = request.POST.get("locationA")
+    loc_b_name = request.POST.get("locationB")
 
-    # ... your simulation logic ...
+    ports = parse_ports()
+    loc_a = next((item for item in ports if item["name"] == loc_a_name), None)
+    loc_b = next((item for item in ports if item["name"] == loc_b_name), None)
 
-    # If you want to hide the input-box after the form submission,
-    # you can redirect to the same page with a flag in the session
-    request.session['hide_input_box'] = True
-    return HttpResponseRedirect(reverse('debug')) # Replace 'debug' with your actual view name
+    #conver lat and lot to float for tuples
 
+    loc_a_coords = (float(loc_a["latitude"]), float(loc_a["longitude"]))
+    loc_b_coords = (float(loc_b["latitude"]), float(loc_b["longitude"]))
 
+    m = request.session.get("map", folium.Map(location=[0, 0], zoom_start=2))
+    
+    #draw line
+    Pathing.straight_path(m, loc_a_coords, loc_b_coords)
 
+    #redirect
+    return HttpResponseRedirect(reverse("debug"))
 def debug_view(request):
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -114,7 +121,7 @@ def debug_view(request):
     folium.PolyLine([(0, -180), (0, 180)], color="red", weight=0.3).add_to(m)  # Equator
     folium.PolyLine([(-90, 0), (90, 0)], color="red", weight=0.3).add_to(m)  # Prime Meridian
 
-    # Generate two random locations and draw a line between them
+    '''Generate two random locations and draw a line between them
     random_points = []
     feature_collection = {"type": "FeatureCollection", "features": []}
     for _ in range(2):
@@ -125,10 +132,12 @@ def debug_view(request):
     
     # Draw a line between the two random points
     folium.PolyLine(random_points, color="blue", weight=2.5, opacity=0.8).add_to(m)
+    '''
 
-    #--------Coastline Test------------------
+    '''--------Coastline Test------------------
     for coords in coast_coords:
         folium.PolyLine(coords, color="red", weight=2.5, opacity=0.8).add_to(m)
+    
     # Create a GeoJSON feature for the point
     feature = {
         "type": "Feature",
@@ -139,6 +148,7 @@ def debug_view(request):
         "properties": {},
     }
     feature_collection["features"].append(feature)
+    '''
     
     # Render map to HTML
     map_html = m._repr_html_()
