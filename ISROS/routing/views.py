@@ -55,13 +55,6 @@ def debug_view(request):
     csv_filepath = os.path.join(script_dir, "data", "ports.csv")
     
     ports = parse_ports()
-    land_shp = os.path.join(script_dir, "data", "ne_10m_land.shp")
-    coastline_shp = os.path.join(script_dir, "data", "ne_10m_coastline.shp")
-    
-    #test coords of land, 1st parameter for pathing
-    coast_coords = Pathing.is_coast()
-
-    #-------------------------
 
     hide_input_box = request.session.pop('hide_input_box', False)
     # Define the bounds of your grid (replace with your specific grid bounds)
@@ -126,10 +119,10 @@ def debug_view(request):
     '''
 
     # Render map to HTML
-    map_html = m._repr_html_()
+    init_map_html = m._repr_html_()
 
     context = {
-        'map_html': map_html,
+        'map_html': init_map_html,
         'hide_input_box': hide_input_box,
         'ports': ports,
     }
@@ -138,37 +131,41 @@ def debug_view(request):
 
 @require_http_methods(["POST"])
 def simulate(request):
+    # Extract location A and B from the POST data
     loc_a_name = request.POST.get("locationA")
     loc_b_name = request.POST.get("locationB")
 
+    # Assume parse_ports() function returns a list of ports with their details
     ports = parse_ports()
-    loc_a = next((item for item in ports if item["name"] == loc_a_name), None)
-    loc_b = next((item for item in ports if item["name"] == loc_b_name), None)
+    loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
+    loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
 
-    if not loc_a or not loc_b:
-        # Handle the case where the locations are not found
-        messages.error(request, "Locations not found.")
-        return redirect('debug')
+    # Check if both locations were found
+    if loc_a is None or loc_b is None:
+        messages.error(request, "One or both locations not found.")
+        return redirect('debug_view')  # Assuming 'debug_view' is the name of the url pattern for the view you want to redirect to
 
-    loc_a_coords = (float(loc_a["latitude"]), float(loc_a["longitude"]))
-    loc_b_coords = (float(loc_b["latitude"]), float(loc_b["longitude"]))
+    # Create a new map object with the same settings as in debug_view()
+    m = folium.Map(
+    location=[
+        (float(loc_a['latitude']) + float(loc_b['latitude'])) / 2,
+        (float(loc_a['longitude']) + float(loc_b['longitude'])) / 2
+    ],
+    zoom_start=3,
+    min_zoom=3,
+    tiles="Cartodb Positron",
+    max_bounds=True
+)
 
-    # Create a new map for the simulation
-    m = folium.Map(location=[(loc_a_coords[0] + loc_b_coords[0]) / 2, 
-                             (loc_a_coords[1] + loc_b_coords[1]) / 2], zoom_start=2)
+    # Draw the path from loc_a to loc_b (assuming Pathing.straight_path is a method you have defined)
+    Pathing.straight_path(
+    m,
+    (float(loc_a['latitude']), float(loc_a['longitude'])),
+    (float(loc_b['latitude']), float(loc_b['longitude']))
+)
 
-    # Draw the path
-    Pathing.straight_path(m, loc_a_coords, loc_b_coords)
-
-    # Generate the map HTML
+    # Serialize the map to HTML
     map_html = m._repr_html_()
 
-    # Instead of storing the map object, store the necessary data to recreate it
-    map_config = {
-        'center': [(loc_a_coords[0] + loc_b_coords[0]) / 2,
-                  (loc_a_coords[1] + loc_b_coords[1]) / 2],
-        'zoom_start': 2
-    }
-    request.session['map_config'] = map_config
-
+    # Pass the new map to the template
     return render(request, 'debug.html', {'map_html': map_html})
