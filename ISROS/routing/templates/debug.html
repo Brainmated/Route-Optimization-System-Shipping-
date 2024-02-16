@@ -8,8 +8,7 @@
     <title>Map with Information and Input Boxes</title>
 </head>
 <body>
-    <div id="map">
-        <!-- Map HTML placeholder -->
+    <div id="map" class="map-container">
         {{ map_html|safe }}
         {% if not simulation_run %}
         <div id="input-box" class="input-container">
@@ -51,10 +50,13 @@
         </div>
         {% endif %}
         {% if simulation_run %}
-        <div id="info-box">Information</div>
-        <form action="{% url 'debug' %}" method="get">
-            <button type="submit">Change/Modify Route</button>
-        </form>
+        <div id="info-box">
+            Information
+            <p>From {{ locationA }} to {{ locationB }}, the distance in kilometers is {{ distance_km }}.</p>
+            <form action="{% url 'debug' %}" method="get">
+                <button type="submit">Change/Modify Route</button>
+            </form>
+        </div>
         {% endif %}
     </div>
 </body>

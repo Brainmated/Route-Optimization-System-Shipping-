@@ -8,6 +8,7 @@ import osmnx as ox
 import geopandas as gpd
 from .ports import parse_ports
 from django.contrib import messages
+from geopy.distance import great_circle
 from shapely.geometry import Point, Polygon
 
 
@@ -81,6 +82,9 @@ class Pathing:
         loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
         loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
 
+        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
+        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
+
         # Check if both locations were found
         if loc_a is None or loc_b is None:
             messages.error(request, "One or both locations not found.")
@@ -100,8 +104,10 @@ class Pathing:
             (float(loc_a['latitude']) + float(loc_b['latitude'])) / 2,
             (float(loc_a['longitude']) + float(loc_b['longitude'])) / 2
         ]
+        distance_km = great_circle(loc_a_coord, loc_b_coord).kilometers
+        formatted_distance = f"{distance_km:.3f}"
 
-        return map_obj
+        return map_obj, formatted_distance
 
     def a_star(start, goal, grid):
         #perform a_star pathing

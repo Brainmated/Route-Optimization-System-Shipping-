@@ -155,7 +155,7 @@ def simulate(request):
     for lon in range(-180, 180, grid_size):
         folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
-    m = Pathing.straight_path(request, m)
+    m, formatted_distance = Pathing.straight_path(request, m)
 
     # Serialize the map to HTML
     map_html = m._repr_html_()
@@ -163,6 +163,9 @@ def simulate(request):
     context = {
         "map_html": map_html,
         "simulation_run": True,
+        "distance_km": formatted_distance,
+        "locationA": "loc_a",
+        "locationB": "loc_b",
     }
 
     # Pass the new map to the template

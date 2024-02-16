@@ -3,7 +3,7 @@ body {
     margin: 0;
     display: flex;
   }
-  
+
   .background-image {
     position: fixed;
     top: 0;
@@ -182,4 +182,4 @@ button {
 .location-dropdown {
   flex-basis: 50%;
 }
-  
+
