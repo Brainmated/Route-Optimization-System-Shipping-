@@ -19,7 +19,9 @@ body {
   }
   
   .container {
-    position: relative;
+    position: absolute;
+    top: 50px;
+    left: 1350px;
     width: 400px;
     padding: 40px;
     background-color: rgba(255, 255, 255, 0.7);
@@ -29,7 +31,7 @@ body {
   }
 
   .typewriter {
-    position: relative;
+    position: absolute;
     top: 40px;
     left: 400px;
     width: 20px;
