@@ -52,6 +52,9 @@
         {% endif %}
         {% if simulation_run %}
         <div id="info-box">Information</div>
+        <form action="{% url 'debug_view' %}" method="get">
+            <button type="submit">Change/Modify Route</button>
+        </form>
         {% endif %}
     </div>
 </body>
