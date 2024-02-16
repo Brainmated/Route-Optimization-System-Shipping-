@@ -6,7 +6,6 @@ from django.contrib import messages
 from django.urls import reverse
 from .forms import SignUpForm
 from .pathing import Pathing, GridMap, Map_Marking
-from .ports import parse_ports
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 import folium
@@ -14,6 +13,7 @@ import os
 import random
 import requests
 import json
+from .ports import parse_ports
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import numpy as np
@@ -136,26 +136,9 @@ def simulate(request):
     min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
     grid_size = 1
 
-    # Extract location A and B from the POST data
-    loc_a_name = request.POST.get("locationA")
-    loc_b_name = request.POST.get("locationB")
-
-    # Assume parse_ports() function returns a list of ports with their details
-    ports = parse_ports()
-    loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
-    loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
-
-    # Check if both locations were found
-    if loc_a is None or loc_b is None:
-        messages.error(request, "One or both locations not found.")
-        return redirect('debug_view')  # Assuming 'debug_view' is the name of the url pattern for the view you want to redirect to
-
-    # Create a new map object with the same settings as in debug_view()
+    
     m = folium.Map(
-    location=[
-        (float(loc_a['latitude']) + float(loc_b['latitude'])) / 2,
-        (float(loc_a['longitude']) + float(loc_b['longitude'])) / 2
-    ],
+    location=[0, 0],
     zoom_start=3,
     min_zoom=3,
     tiles="Cartodb Positron",
@@ -172,15 +155,15 @@ def simulate(request):
     for lon in range(-180, 180, grid_size):
         folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
-    # Draw the path from loc_a to loc_b (assuming Pathing.straight_path is a method you have defined)
-    Pathing.straight_path(
-    m,
-    (float(loc_a['latitude']), float(loc_a['longitude'])),
-    (float(loc_b['latitude']), float(loc_b['longitude']))
-)
+    m = Pathing.straight_path(request, m)
 
     # Serialize the map to HTML
     map_html = m._repr_html_()
 
+    context = {
+        "map_html": map_html,
+        "simulation_run": True,
+    }
+
     # Pass the new map to the template
-    return render(request, 'debug.html', {'map_html': map_html})
+    return render(request, 'debug.html', context)

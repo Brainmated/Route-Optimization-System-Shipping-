@@ -6,6 +6,8 @@ import networkx as nx
 import random
 import osmnx as ox
 import geopandas as gpd
+from .ports import parse_ports
+from django.contrib import messages
 from shapely.geometry import Point, Polygon
 
 
@@ -68,9 +70,38 @@ class Pathing:
         return lines
     
     @staticmethod
-    def straight_path(m, location1, location2):
-        folium.PolyLine([location1, location2], color="blue", weight=2.5, opacity=1).add_to(m)
-        m.fit_bounds([location1, location2])
+    def straight_path(request, map_obj):
+        # Extract location A and B from the POST data
+        loc_a_name = request.POST.get("locationA")
+        loc_b_name = request.POST.get("locationB")
+
+        # Assume parse_ports() function returns a list of ports with their details (implement this)
+        ports = parse_ports()  # This function needs to be defined elsewhere in your application
+
+        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
+        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
+
+        # Check if both locations were found
+        if loc_a is None or loc_b is None:
+            messages.error(request, "One or both locations not found.")
+            # You may need to handle this case more gracefully, depending on how your application is structured
+            return map_obj  # Return the map object without changes
+
+        # Draw the path from loc_a to loc_b
+        folium.PolyLine(
+            [(float(loc_a['latitude']), float(loc_a['longitude'])), (float(loc_b['latitude']), float(loc_b['longitude']))],
+            color="red",
+            weight=2.5,
+            opacity=1
+        ).add_to(map_obj)
+
+        # Update the map's location to center between loc_a and loc_b
+        map_obj.location = [
+            (float(loc_a['latitude']) + float(loc_b['latitude'])) / 2,
+            (float(loc_a['longitude']) + float(loc_b['longitude'])) / 2
+        ]
+
+        return map_obj
 
     def a_star(start, goal, grid):
         #perform a_star pathing
