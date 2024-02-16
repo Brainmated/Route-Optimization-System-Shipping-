@@ -52,7 +52,7 @@
         {% if simulation_run %}
         <div id="info-box">
             Information
-            <p>From {{ locationA }} to {{ locationB }}, the distance in kilometers is {{ distance_km }}.</p>
+            <p>From {{ locationA }} to {{ locationB }}, the distance is {{ distance_km }} km.</p>
             <form action="{% url 'debug' %}" method="get">
                 <button type="submit">Change/Modify Route</button>
             </form>

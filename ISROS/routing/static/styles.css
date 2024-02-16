@@ -1,7 +1,9 @@
 body {
+    height: 100%;
     font-family: Arial, sans-serif;
     margin: 0;
     display: flex;
+    overflow: hidden;
   }
 
   .background-image {
@@ -139,7 +141,7 @@ body {
   z-index: 10;
 }
 #info-box {
-  bottom: 100px; /* Distance from the bottom */
+  bottom: 250px; /* Distance from the bottom */
   left: 100px; /* Distance from the left */
   height: 24%;
 }
@@ -181,5 +183,9 @@ button {
 
 .location-dropdown {
   flex-basis: 50%;
+}
+
+.map-container {
+  height: 10vh; /* Assign a height that is half the viewport height */
 }
 
