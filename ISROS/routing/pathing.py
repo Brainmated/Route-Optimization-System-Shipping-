@@ -1,5 +1,6 @@
 import folium
 from folium.plugins import AntPath
+import shapely.geometry
 from shapely.geometry import Point, LineString, MultiLineString
 import os
 import networkx as nx
@@ -12,15 +13,25 @@ from geopy.distance import great_circle
 from shapely.geometry import Point, Polygon
 
 
-class GridMap:
-    def __init__(self, bounds, resolution):
-        self.bounds = bounds # ((min_x, min_y), (max_x, max_y))
-        self.resolution = resolution
-        self.grid = self.create_grid()
-        self.graph = self.create_graph()
+class Node:
+    def __init__(self, lat, lon):
+        self.lat = lat
+        self.lon = lon
+        self.neighbors = []
 
+class GridMap:
+    
+    #current method will test for the 1° x 1° grid
+    def __init__(self, resolution=1.0):
+        self.resolution = resolution
+        self.nodes = self.create_nodes()
+
+    #method that creates nodes on the grid to help map the cells
+    def create_nodes(self):
+'''
 class Map_Marking:
 
+    #check validity of shape files
     def __init__(self, land_shp, water_shp):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.land_data = gpd.read_file("routing/data/ne_10m_land.shp")
@@ -29,6 +40,7 @@ class Map_Marking:
 
     #---------------------------------THE SHP FILES ARE VALID----------------------------------
     #---------------------------------CHECK WHY THE RANDOM POSITIONS ARENT THAT RANDOM---------
+'''
 
 class Pathing:
 
@@ -71,6 +83,23 @@ class Pathing:
         return lines
     
     @staticmethod
+    def is_near_coast(point, coast_lines, threshold):
+        shapely_point = Point(point)
+        for line in coast_lines:
+            shapely_line = LineString(line)
+            if shapely_point.distance(shapely_line) <= threshold:  # Corrected line
+                return True
+        return False
+    
+    def near_coast_proximity(grid, coast_lines, threshold):
+        for x in range(len(grid)):
+            for y in range(len(grid[x])):
+                if Pathing.is_near_coast((x, y), coast_lines, threshold):
+                    grid[x][y].walkable = True
+
+    
+    
+    @staticmethod
     def straight_path(request, map_obj):
         # Extract location A and B from the POST data
         loc_a_name = request.POST.get("locationA")
@@ -109,8 +138,15 @@ class Pathing:
 
         return map_obj, formatted_distance
 
-    def a_star(start, goal, grid):
-        #perform a_star pathing
+    def a_star(start, goal, grid, coast_lines):
+        
+        while not open_set.empty():
+            current = open_set.get()[2]
+
+            for neighbor in get_neighbors(current, grid):
+                #check if the neighbor is near a coast
+                if grid[neighbor.x][neighbor.y].walkable or is_near_coast((neighbor.x, neighbor.y), coast_lines, threshold):
+                    pass
         pass
 
     def get_path_coordinates():
