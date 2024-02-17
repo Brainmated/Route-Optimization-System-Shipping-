@@ -28,6 +28,16 @@ class GridMap:
 
     #method that creates nodes on the grid to help map the cells
     def create_nodes(self):
+
+        #set nodes as a dictionary and set attributes
+        nodes = {}
+        pass
+
+    def add_edges(self):
+        pass
+
+    def get_node(self, lat, lon):
+        pass
 '''
 class Map_Marking:
 
