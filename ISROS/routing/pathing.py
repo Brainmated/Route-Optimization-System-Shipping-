@@ -20,6 +20,11 @@ class Node:
         self.lon = lon
         self.neighbors = []
 
+'''
+The GridMap class creates a node for every integer latitude/longitude
+intersection and then adds edges to each node's neighbors.
+With 8 possible directions of movement the add_edges() method
+handles wrapping of the map so the eastern most and western most edges connect.'''
 class GridMap:
     
     #current method will test for the 1° x 1° grid
