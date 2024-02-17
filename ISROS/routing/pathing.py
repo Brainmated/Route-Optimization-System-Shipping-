@@ -3,6 +3,7 @@ from folium.plugins import AntPath
 import shapely.geometry
 from shapely.geometry import Point, LineString, MultiLineString
 import os
+import numpy as np
 import networkx as nx
 import random
 import osmnx as ox
@@ -31,12 +32,46 @@ class GridMap:
 
         #set nodes as a dictionary and set attributes
         nodes = {}
-        pass
+        for lat in np.arrange(-90, 90, self.resolution):
+            for lon in np.arrange(-180, 180, self.resolution):
+                nodes[(lat, lon)] = Node(lat, lon)
+        return nodes
+    
 
     def add_edges(self):
-        pass
+
+        #8 directions for the 8 edges of every node to move on
+        directions = [
+            (-1, 1), (-1, 0), (-1, 1) #Southwest | South |Southeast
+            (0,1),            (0, 1)  #West | Node | East
+            (1, -1), (1, 0), (1, 1),  #Northwest | North | Northeast
+        ]
+
+        for (lat, lon), node in self.nodes.items():
+            for d_lat, d_lon in directions:
+                neighbor_lat = lat + d_lat * self.resolution
+                neighbor_lon = lon + d_lon * self.resolution
+
+                #degree wrapping for longitude
+                if neighbor_lon < -180:
+                    neighbor_lon += 360
+                elif neighbor_lon > 180:
+                    neighbor_lon -= 360
+
+                #degree wrapping for latitude
+                if neighbor_lat < -90 or neighbor_lat > 90:
+                    #just skip creating more edges that go beyond the two poles
+                    continue
+
+                neighbor = self.nodes.get((neighbor_lat, neighbor_lon))
+
+                if neighbor:
+                    node.neighbors.append(neighbor)
+
 
     def get_node(self, lat, lon):
+
+        return self.nodes.get((lat, lon))
         pass
 '''
 class Map_Marking:
