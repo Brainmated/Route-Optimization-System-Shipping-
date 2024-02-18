@@ -6,6 +6,8 @@ import os
 import numpy as np
 import networkx as nx
 import random
+import heapq
+from math import radians, cos, sin, asin, sqrt
 import osmnx as ox
 import geopandas as gpd
 from .ports import parse_ports
@@ -190,20 +192,90 @@ class Pathing:
 
         return map_obj, formatted_distance
 
-    def a_star(start, goal, grid, coast_lines):
-        
-        while not open_set.empty():
-            current = open_set.get()[2]
-
-            for neighbor in get_neighbors(current, grid):
-                #check if the neighbor is near a coast
-                if grid[neighbor.x][neighbor.y].walkable or is_near_coast((neighbor.x, neighbor.y), coast_lines, threshold):
-                    pass
-        pass
-
     def get_path_coordinates():
         pass
 
     def get_restrictions():
         #https://github.com/genthalili/searoute-py/issues/25
         pass
+
+    def a_star(start, goal, grid_map):
+
+        #implement Heuristics
+        def haversine(lat1, lon1, lat2, lon2):
+            #convert decimal degrees to radians
+            lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+
+            #Haversine formula
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+            c = 2 * asin(sqrt(a))
+            #earth radius in kilometers
+            km = 6371 * c
+            return km
+        
+        #open and closed sets 
+        #open sets contain nodes that have been discovered but not evaluated
+        open_set = []
+
+        heapq.heappush(open_set, (0, start))
+
+        #closed sets contain nodes that have been evaluated
+        closed_set = set()
+
+        #distance and movement cost from initial/start state to current node
+        g_score = {node: float("inf") for node in grid_map.nodes.values()}
+        g_score[start] = 0 #the initial state, position 0
+
+        #estimated movement cost from current node to end/goal node
+        f_score = {node: float("inf") for node in grid_map.nodes.values()}
+        f_score[start] = haversine(start.lat, start.lon, goal.lat, goal.lon)
+
+        #path reconstruction
+        came_from = {}
+
+        while open_set:
+
+            #search for node in open set with the lowest f_score value
+            current = heapq.heappop(open_set[1])
+
+            if current == goal:
+
+                #reconstruct the path
+                path = []
+
+                while current in came_from:
+                    #add to the path
+                    path.append(current)
+                    current = came_from[current]
+                path.append(start)
+                
+                #return the reversed path
+                return path[::-1]  
+            
+            closed_set.add(current)
+
+            for neighbor in current.neighbors:
+                if neighbor in closed_set:
+                    #ignore evaluated neighbors and continue
+                    continue
+
+                #hesitant approach
+                tentative_g_score = g_score[current] + haversine(current.lat, current.lon, neighbor.lat, neighbor.lon)
+
+                #performance here is questionable
+                if neighbor not in [i[1] for i in open_set]:
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+                elif tentative_g_score >= g_score[neighbor]:
+                    #not the best path
+                    continue
+
+                #BEST PATH
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g_score
+                f_score[neighbor] = tentative_g_score +haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
+
+        #the optimal path isnt found
+        return None
