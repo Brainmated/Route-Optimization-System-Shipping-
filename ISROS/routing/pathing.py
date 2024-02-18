@@ -199,7 +199,7 @@ class Pathing:
         #https://github.com/genthalili/searoute-py/issues/25
         pass
 
-    def a_star(start, goal, grid_map):
+    def a_star(self, start, goal, grid_map):
 
         #implement Heuristics
         def haversine(lat1, lon1, lat2, lon2):
@@ -235,6 +235,8 @@ class Pathing:
         #path reconstruction
         came_from = {}
 
+        coast_lines = self.is_coast()
+
         while open_set:
 
             #search for node in open set with the lowest f_score value
@@ -257,6 +259,9 @@ class Pathing:
             closed_set.add(current)
 
             for neighbor in current.neighbors:
+
+                if not self.is_near_coast((neighbor.lat, neighbor.lon), coast_lines, threshold):
+                    continue
                 if neighbor in closed_set:
                     #ignore evaluated neighbors and continue
                     continue
@@ -276,6 +281,7 @@ class Pathing:
                 came_from[neighbor] = current
                 g_score[neighbor] = tentative_g_score
                 f_score[neighbor] = tentative_g_score +haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
+                
 
         #the optimal path isnt found
         return None
