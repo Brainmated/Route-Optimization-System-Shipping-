@@ -279,3 +279,9 @@ class Pathing:
 
         #the optimal path isnt found
         return None
+    
+    def dijkstra():
+        pass
+
+    def visibility_graph():
+        pass
