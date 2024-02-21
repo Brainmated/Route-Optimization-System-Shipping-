@@ -41,7 +41,7 @@ class GridMap:
 
         #set nodes as a dictionary and set attributes
         nodes = {}
-        for lat in np.arrange(-90, 90, self.resolution):
+        for lat in np.arange(-90, 90, self.resolution):
             for lon in np.arrange(-180, 180, self.resolution):
                 nodes[(lat, lon)] = Node(lat, lon)
         return nodes
