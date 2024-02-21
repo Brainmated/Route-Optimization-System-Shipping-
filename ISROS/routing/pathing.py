@@ -208,8 +208,11 @@ class Pathing:
         loc_b_name = request.POST.get("locationB")
         ports = parse_ports()
 
-        start = next((port for port in ports if port["name"] == loc_a_name), None)
-        goal = next((port for port in ports if port["name"] == loc_a_name), None)
+        start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
+        goal_coords = next((port for port in ports if port["name"] == loc_a_name), None)
+        
+        start = grid_map.get_node(start_coords["latitude"], start_coords["longitude"])
+        goal = grid_map.get_node(goal_coords["latitude"], goal_coords["longitude"])
         
         if start is None or goal is None:
             messages.error(request, "One or both locations not found.")
