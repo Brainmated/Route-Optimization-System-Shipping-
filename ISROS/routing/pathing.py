@@ -42,7 +42,7 @@ class GridMap:
         #set nodes as a dictionary and set attributes
         nodes = {}
         for lat in np.arange(-90, 90, self.resolution):
-            for lon in np.arrange(-180, 180, self.resolution):
+            for lon in np.arange(-180, 180, self.resolution):
                 nodes[(lat, lon)] = Node(lat, lon)
         return nodes
     
@@ -213,7 +213,7 @@ class Pathing:
         
         start = grid_map.get_node(start_coords["latitude"], start_coords["longitude"])
         goal = grid_map.get_node(goal_coords["latitude"], goal_coords["longitude"])
-        
+
         if start is None or goal is None:
             messages.error(request, "One or both locations not found.")
             return None

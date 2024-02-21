@@ -164,15 +164,19 @@ def simulate(request):
     m, formatted_distance = Pathing.straight_path(request, m)
     
     #obtaining the a_star path
-    path, distance = Pathing.a_star(request, grid_map)
+    result = Pathing.a_star(request, grid_map)
 
-    if path:
+    if result:
+        path, distance = result
+
         #extract coordinates
         path_coords = [(node.lat, node.lon) for node in path]
 
         #draw path
         folium.PolyLine(path_coords, color="green", weight=2.5, opacity=1).add_to(m)
-    
+    else:
+        print("Figure what's wrong this time.")
+        
     # Serialize the map to HTML
     map_html = m._repr_html_()
 
