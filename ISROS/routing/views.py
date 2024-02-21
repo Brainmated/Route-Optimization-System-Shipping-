@@ -136,7 +136,12 @@ def simulate(request):
     min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
     grid_size = 1
 
-    
+    #initialize resolution
+    grid_map = GridMap(resolution=grid_size)
+
+    #add the edges between the nodes
+    grid_map.add_edges()
+
     m = folium.Map(
     location=[0, 0],
     zoom_start=3,
@@ -155,8 +160,19 @@ def simulate(request):
     for lon in range(-180, 180, grid_size):
         folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
+    #obtaining the straight_path
     m, formatted_distance = Pathing.straight_path(request, m)
+    
+    #obtaining the a_star path
     path, distance = Pathing.a_star(request, grid_map)
+
+    if path:
+        #extract coordinates
+        path_coords = [(node.lat, node.lon) for node in path]
+
+        #draw path
+        folium.PolyLine(path_coords, color="green", weight=2.5, opacity=1).add_to(m)
+    
     # Serialize the map to HTML
     map_html = m._repr_html_()
 
@@ -164,8 +180,8 @@ def simulate(request):
         "map_html": map_html,
         "simulation_run": True,
         "distance_km": formatted_distance,
-        "locationA": "loc_a",
-        "locationB": "loc_b",
+        "locationA": request.POST.get("locationA"),
+        "locationB": request.POST.get("locationA"),
     }
 
     # Pass the new map to the template
