@@ -1,89 +1,88 @@
 body {
-    height: 100%;
-    font-family: Arial, sans-serif;
-    margin: 0;
-    display: flex;
-    overflow: hidden;
-  }
+  height: 100%;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  overflow: hidden;
+}
 
-  .background-image {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url("/static/background-image.jpeg");
-    background-size: cover;
-    background-position: center;
-    z-index: -1;
-  }
-  
-  .container {
-    position: absolute;
-    top: 50px;
-    left: 1350px;
-    width: 400px;
-    padding: 40px;
-    background-color: rgba(255, 255, 255, 0.7);
-    border-radius: 5px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    margin-right: auto;
-  }
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("/static/background-image.jpeg");
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+}
 
-  .typewriter {
-    position: absolute;
-    top: 40px;
-    left: 400px;
-    width: 20px;
-    height: 100%;
-  }
-  
-  .text {
-    font-size: 20px;
-    font-family: monospace;
-    white-space: pre-wrap;
-    margin: 0;
-    padding-right: 10px;
-    animation: typing 2s steps(30, end), blink-caret .5s step-end infinite;
-  }
-  
-  @keyframes typing {
-    from {
+.container {
+  position: absolute;
+  top: 50px;
+  left: 1350px;
+  width: 400px;
+  padding: 40px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 5px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  margin-right: auto;
+}
+
+.typewriter {
+  position: relative; /* Modified property */
+  display: inline-block; /* Modified property */
+}
+
+.text {
+  font-size: 20px;
+  font-family: monospace;
+  white-space: nowrap;
+  margin: 0;
+  padding-right: 10px;
+  border-right: 1.5px solid #000; /* Added property */
+  overflow: hidden; /* Added property */
+  animation: typewriter 2s steps(40) forwards, blink-caret .5s step-end infinite;
+}
+
+@keyframes typewriter {
+  from {
       width: 0;
-    }
-    to {
+  }
+  to {
       width: 100%;
-    }
   }
-  
-  @keyframes blink-caret {
-    from,
-    to {
+}
+
+@keyframes blink-caret {
+  from,
+  to {
       border-color: transparent;
-    }
-    50% {
+  }
+  50% {
       border-color: #000;
-    }
   }
-  
-  .cursor {
-    display: inline-block;
-    vertical-align: middle;
-    width: 1.5px;
-    height: 20px;
-    background-color: #000;
-    animation: blink 1s infinite;
-  }
-  
-  @keyframes blink {
-    from,
-    to {
+}
+
+.cursor {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.5px;
+  height: 20px;
+  background-color: #000;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  from,
+  to {
       opacity: 0;
-    }
-    50% {
-      opacity: 1;
-    }
   }
+  50% {
+      opacity: 1;
+  }
+}
 
   h1 {
     text-align: center;
