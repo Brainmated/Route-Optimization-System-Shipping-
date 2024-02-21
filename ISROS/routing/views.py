@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.urls import reverse
 from .forms import SignUpForm
-from .pathing import Pathing, GridMap, Map_Marking
+from .pathing import Pathing, GridMap
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 import folium
@@ -156,7 +156,7 @@ def simulate(request):
         folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
     m, formatted_distance = Pathing.straight_path(request, m)
-
+    path, distance = Pathing.a_star(request, grid_map)
     # Serialize the map to HTML
     map_html = m._repr_html_()
 

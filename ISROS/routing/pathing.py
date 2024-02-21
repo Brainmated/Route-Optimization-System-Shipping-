@@ -51,8 +51,8 @@ class GridMap:
 
         #8 directions for the 8 edges of every node to move on
         directions = [
-            (-1, 1), (-1, 0), (-1, 1) #Southwest | South |Southeast
-            (0,1),            (0, 1)  #West | Node | East
+            (-1, 1), (-1, 0), (-1, 1), #Southwest | South |Southeast
+            (0, 1),            (0, 1),  #West | Node | East
             (1, -1), (1, 0), (1, 1),  #Northwest | North | Northeast
         ]
 
@@ -136,13 +136,16 @@ class Pathing:
                     lines.append(coords)
         return lines
     
-    @staticmethod
-    def is_near_coast(point, coast_lines, threshold):
-        shapely_point = Point(point)
+    def is_near_coast(self, point, coast_lines, threshold):
+        shapely_point = Point(point[1], point[0])
+
         for line in coast_lines:
             shapely_line = LineString(line)
-            if shapely_point.distance(shapely_line) <= threshold:  # Corrected line
+
+            #rough conversion from degrees to kilometers
+            if shapely_point.distance(shapely_line > threshold) / 111.32:
                 return True
+        
         return False
     
     def near_coast_proximity(grid, coast_lines, threshold):
@@ -168,10 +171,10 @@ class Pathing:
         loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
         loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
 
-        # Check if both locations were found
+        #Input validation
         if loc_a is None or loc_b is None:
             messages.error(request, "One or both locations not found.")
-            # You may need to handle this case more gracefully, depending on how your application is structured
+            
             return map_obj  # Return the map object without changes
 
         # Draw the path from loc_a to loc_b
@@ -199,8 +202,19 @@ class Pathing:
         #https://github.com/genthalili/searoute-py/issues/25
         pass
 
-    def a_star(self, start, goal, grid_map):
+    def a_star(request, grid_map):
 
+        loc_a_name = request.POST.get("locationA")
+        loc_b_name = request.POST.get("locationB")
+        ports = parse_ports()
+
+        start = next((port for port in ports if port["name"] == loc_a_name), None)
+        goal = next((port for port in ports if port["name"] == loc_a_name), None)
+        
+        if start is None or goal is None:
+            messages.error(request, "One or both locations not found.")
+            return None
+        
         #implement Heuristics
         def haversine(lat1, lon1, lat2, lon2):
             #convert decimal degrees to radians
@@ -218,8 +232,9 @@ class Pathing:
         #open and closed sets 
         #open sets contain nodes that have been discovered but not evaluated
         open_set = []
-
+        open_set_tracker = set()
         heapq.heappush(open_set, (0, start))
+        open_set_tracker.add(start)
 
         #closed sets contain nodes that have been evaluated
         closed_set = set()
@@ -235,12 +250,15 @@ class Pathing:
         #path reconstruction
         came_from = {}
 
-        coast_lines = self.is_coast()
+        coast_lines = Pathing.is_coast()
+
+        #threshold of at least 10 km away from the coast
+        threshold = 10
 
         while open_set:
 
             #search for node in open set with the lowest f_score value
-            current = heapq.heappop(open_set[1])
+            current = heapq.heappop(open_set)[1]
 
             if current == goal:
 
@@ -260,8 +278,9 @@ class Pathing:
 
             for neighbor in current.neighbors:
 
-                if not self.is_near_coast((neighbor.lat, neighbor.lon), coast_lines, threshold):
+                if Pathing.is_near_coast((neighbor.lat, neighbor.lon), coast_lines, threshold):
                     continue
+                
                 if neighbor in closed_set:
                     #ignore evaluated neighbors and continue
                     continue
@@ -270,7 +289,7 @@ class Pathing:
                 tentative_g_score = g_score[current] + haversine(current.lat, current.lon, neighbor.lat, neighbor.lon)
 
                 #performance here is questionable
-                if neighbor not in [i[1] for i in open_set]:
+                if neighbor not in open_set_tracker:
                     heapq.heappush(open_set, (f_score[neighbor], neighbor))
 
                 elif tentative_g_score >= g_score[neighbor]:
