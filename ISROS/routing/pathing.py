@@ -3,6 +3,7 @@ from folium.plugins import AntPath
 import shapely.geometry
 from shapely.geometry import Point, LineString, MultiLineString
 import os
+import sys
 import numpy as np
 import networkx as nx
 import random
@@ -203,127 +204,130 @@ class Pathing:
         pass
 
     def a_star(request, grid_map):
+        print("Debugging: Starting A* algorithm")
+        try:
+            loc_a_name = request.POST.get("locationA")
+            loc_b_name = request.POST.get("locationB")
+            ports = parse_ports()
 
-        loc_a_name = request.POST.get("locationA")
-        loc_b_name = request.POST.get("locationB")
-        ports = parse_ports()
-
-        start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
-        goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
-        
-        start = grid_map.get_node(start_coords["latitude"], start_coords["longitude"])
-        goal = grid_map.get_node(goal_coords["latitude"], goal_coords["longitude"])
-
-        if start is None or goal is None:
-            messages.error(request, "One or both locations not found.")
-            return None
-        #DEBUG------------------------------------------------------------------
-        print(f"Debugging: Start Node: {start}, Goal Node: {goal}")
-
-        #implement Heuristics
-        def haversine(lat1, lon1, lat2, lon2):
-            #convert decimal degrees to radians
-            lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-
-            #Haversine formula
-            dlat = lat2 - lat1
-            dlon = lon2 - lon1
-            a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-            c = 2 * asin(sqrt(a))
-            #earth radius in kilometers
-            km = 6371 * c
-            return km
-        
-        #open and closed sets 
-        #open sets contain nodes that have been discovered but not evaluated
-        open_set = []
-        open_set_tracker = set()
-        heapq.heappush(open_set, (0, start))
-        open_set_tracker.add(start)
-        #DEBUG----------------------------------------------------------------------------
-        print(f"Debugging: Open set size after adding start: {len(open_set)}")
-        #closed sets contain nodes that have been evaluated
-        closed_set = set()
-
-        #distance and movement cost from initial/start state to current node
-        g_score = {node: float("inf") for node in grid_map.nodes.values()}
-        g_score[start] = 0 #the initial state, position 0
-
-        #estimated movement cost from current node to end/goal node
-        f_score = {node: float("inf") for node in grid_map.nodes.values()}
-        f_score[start] = haversine(start.lat, start.lon, goal.lat, goal.lon)
-        #DEBUG-------------------------------------------------------------------------------
-        print(f"Debugging: Initial heuristic value: {f_score[start]}")
-        #path reconstruction
-        came_from = {}
-
-        coast_lines = Pathing.is_coast()
-
-        #threshold of at least 10 km away from the coast
-        threshold = 10
-
-        while open_set:
-
-            #search for node in open set with the lowest f_score value
-            current = heapq.heappop(open_set)[1]
-            #DEBUG-----------------------------------------------------------------
-            print(f"Debugging: Current Node: {current}") 
-            if current == goal:
-                #DEBUG-----------------------------------------------------------------------
-                print("Debugging: Goal reached, reconstructing path.")
-                #reconstruct the path
-                path = []
-                #DEBUG---------------------------------------------------------------------------------
-                print(f"Debugging: Reconstructed path: {path}")
-
-                while current in came_from:
-                    #add to the path
-                    path.append(current)
-                    current = came_from[current]
-                path.append(start)
-                
-                #return the reversed path
-                return path[::-1]  
+            start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
+            goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
             
-            closed_set.add(current)
+            start = grid_map.get_node(start_coords["latitude"], start_coords["longitude"])
+            goal = grid_map.get_node(goal_coords["latitude"], goal_coords["longitude"])
 
-            for neighbor in current.neighbors:
+            if start is None or goal is None:
+                messages.error(request, "One or both locations not found.")
+                return None
+            #DEBUG------------------------------------------------------------------
+            print(f"Debugging: Start Node: {start}, Goal Node: {goal}")
+                
+            
+            #implement Heuristics
+            def haversine(lat1, lon1, lat2, lon2):
+                #convert decimal degrees to radians
+                lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+
+                #Haversine formula
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                c = 2 * asin(sqrt(a))
+                #earth radius in kilometers
+                km = 6371 * c
+                return km
+            
+            #open and closed sets 
+            #open sets contain nodes that have been discovered but not evaluated
+            open_set = []
+            open_set_tracker = set()
+            heapq.heappush(open_set, (0, start))
+            open_set_tracker.add(start)
+            #DEBUG--------------------------------------------------------------------
+            print(f"Debugging: Open set size after adding start: {len(open_set)}")
+            #closed sets contain nodes that have been evaluated
+            closed_set = set()
+
+            #distance and movement cost from initial/start state to current node
+            g_score = {node: float("inf") for node in grid_map.nodes.values()}
+            g_score[start] = 0 #the initial state, position 0
+
+            #estimated movement cost from current node to end/goal node
+            f_score = {node: float("inf") for node in grid_map.nodes.values()}
+            f_score[start] = haversine(start.lat, start.lon, goal.lat, goal.lon)
+            #DEBUG-------------------------------------------------------------------------------
+            print(f"Debugging: Initial heuristic value: {f_score[start]}")
+            #path reconstruction
+            came_from = {}
+
+            coast_lines = Pathing.is_coast()
+
+            #threshold of at least 10 km away from the coast
+            threshold = 10
+
+            while open_set:
+
+                #search for node in open set with the lowest f_score value
+                current = heapq.heappop(open_set)[1]
                 #DEBUG-----------------------------------------------------------------
-                print(f"Debugging: Evaluating neighbor: {neighbor}")
-                if Pathing.is_near_coast((neighbor.lat, neighbor.lon), coast_lines, threshold):
-                    #DEBUG----------------------------------------------------------------------
-                    print(f"Debugging: Neighbor {neighbor} is near coast and will be skipped.")
-                    continue
-                
-                if neighbor in closed_set:
-                    #ignore evaluated neighbors and continue
-                    continue
+                print(f"Debugging: Current Node: {current}") 
+                if current == goal:
+                    #DEBUG-----------------------------------------------------------------------
+                    print("Debugging: Goal reached, reconstructing path.")
+                    #reconstruct the path
+                    path = []
+                    #DEBUG---------------------------------------------------------------------------------
+                    print(f"Debugging: Reconstructed path: {path}")
 
-                #hesitant approach
-                tentative_g_score = g_score[current] + haversine(current.lat, current.lon, neighbor.lat, neighbor.lon)
-                #DEBUG-----------------------------------------------------------------------------
-                print(f"Debugging: Tentative G Score for {neighbor}: {tentative_g_score}")
-                #performance here is questionable
-                if neighbor not in open_set_tracker:
-                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
-                    open_set_tracker.add(neighbor)
+                    while current in came_from:
+                        #add to the path
+                        path.append(current)
+                        current = came_from[current]
+                    path.append(start)
+                    
+                    #return the reversed path
+                    return path[::-1]  
+                
+                closed_set.add(current)
 
-                elif tentative_g_score >= g_score[neighbor]:
-                    #not the best path
-                    continue
-                
-                #when a node is popped from the open set, then remove it from the tracker
-                open_set_tracker.remove(current)
-                
-                #BEST PATH
-                came_from[neighbor] = current
-                g_score[neighbor] = tentative_g_score
-                f_score[neighbor] = tentative_g_score +haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
-                
+                for neighbor in current.neighbors:
+                    #DEBUG-----------------------------------------------------------------
+                    print(f"Debugging: Evaluating neighbor: {neighbor}")
+                    if Pathing.is_near_coast((neighbor.lat, neighbor.lon), coast_lines, threshold):
+                        #DEBUG----------------------------------------------------------------------
+                        print(f"Debugging: Neighbor {neighbor} is near coast and will be skipped.")
+                        continue
+                    
+                    if neighbor in closed_set:
+                        #ignore evaluated neighbors and continue
+                        continue
 
-        #the optimal path isnt found
-        return None
-    
+                    #hesitant approach
+                    tentative_g_score = g_score[current] + haversine(current.lat, current.lon, neighbor.lat, neighbor.lon)
+                    #DEBUG-----------------------------------------------------------------------------
+                    print(f"Debugging: Tentative G Score for {neighbor}: {tentative_g_score}")
+                    #performance here is questionable
+                    if neighbor not in open_set_tracker:
+                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                        open_set_tracker.add(neighbor)
+
+                    elif tentative_g_score >= g_score[neighbor]:
+                        #not the best path
+                        continue
+                    
+                    #when a node is popped from the open set, then remove it from the tracker
+                    open_set_tracker.remove(current)
+                    
+                    #BEST PATH
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score +haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
+                    
+            sys.stdout.flush()
+            #the optimal path isnt found
+            return None
+        except Exception as e:
+            print(f"Exception occurred: {e}")
     def dijkstra():
         pass
 

@@ -202,7 +202,7 @@ def simulate(request):
         "simulation_run": True,
         "distance_km": formatted_distance,
         "locationA": request.POST.get("locationA"),
-        "locationB": request.POST.get("locationA"),
+        "locationB": request.POST.get("locationB"),
     }
 
     # Pass the new map to the template
