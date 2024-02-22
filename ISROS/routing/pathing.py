@@ -143,7 +143,7 @@ class Pathing:
             shapely_line = LineString(line)
 
             #rough conversion from degrees to kilometers
-            if shapely_point.distance(shapely_line > threshold) / 111.32:
+            if shapely_point.distance(shapely_line) / 111.32 > threshold :
                 return True
         
         return False
@@ -152,7 +152,7 @@ class Pathing:
         for x in range(len(grid)):
             for y in range(len(grid[x])):
                 if Pathing.is_near_coast((x, y), coast_lines, threshold):
-                    grid[x][y].walkable = True
+                    grid[x][y].walkable = False
 
     
     
@@ -209,7 +209,7 @@ class Pathing:
         ports = parse_ports()
 
         start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
-        goal_coords = next((port for port in ports if port["name"] == loc_a_name), None)
+        goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
         
         start = grid_map.get_node(start_coords["latitude"], start_coords["longitude"])
         goal = grid_map.get_node(goal_coords["latitude"], goal_coords["longitude"])
@@ -294,11 +294,15 @@ class Pathing:
                 #performance here is questionable
                 if neighbor not in open_set_tracker:
                     heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                    open_set_tracker.add(neighbor)
 
                 elif tentative_g_score >= g_score[neighbor]:
                     #not the best path
                     continue
-
+                
+                #when a node is popped from the open set, then remove it from the tracker
+                open_set_tracker.remove(current)
+                
                 #BEST PATH
                 came_from[neighbor] = current
                 g_score[neighbor] = tentative_g_score
