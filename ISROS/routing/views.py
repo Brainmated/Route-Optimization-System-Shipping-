@@ -132,8 +132,8 @@ def debug_view(request):
 @require_http_methods(["POST"])
 def simulate(request):
 
-    min_lat, max_lat = -90, 90  # Replace with the minimum and maximum latitude of your grid
-    min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
+    min_lat, max_lat = -90, 90 
+    min_lon, max_lon = -180, 180 
     grid_size = 1
 
     #initialize resolution
@@ -152,11 +152,11 @@ def simulate(request):
     bounds = [[min_lat, min_lon], [max_lat, max_lon]]
     m.fit_bounds(bounds)  # Fit the map to the bounds
     
-    # Create horizontal lines (latitude lines)
+    #Create horizontal lines (latitude lines)
     for lat in range(-90, 90, grid_size):
         folium.PolyLine([(lat, -180), (lat, 180)], color="blue", weight=0.1).add_to(m)
 
-    # Create vertical lines (longitude lines)
+    #Create vertical lines (longitude lines)
     for lon in range(-180, 180, grid_size):
         folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
