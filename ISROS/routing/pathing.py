@@ -217,7 +217,9 @@ class Pathing:
         if start is None or goal is None:
             messages.error(request, "One or both locations not found.")
             return None
-        
+        #DEBUG------------------------------------------------------------------
+        print(f"Debugging: Start Node: {start}, Goal Node: {goal}")
+
         #implement Heuristics
         def haversine(lat1, lon1, lat2, lon2):
             #convert decimal degrees to radians
@@ -238,7 +240,8 @@ class Pathing:
         open_set_tracker = set()
         heapq.heappush(open_set, (0, start))
         open_set_tracker.add(start)
-
+        #DEBUG----------------------------------------------------------------------------
+        print(f"Debugging: Open set size after adding start: {len(open_set)}")
         #closed sets contain nodes that have been evaluated
         closed_set = set()
 
@@ -249,7 +252,8 @@ class Pathing:
         #estimated movement cost from current node to end/goal node
         f_score = {node: float("inf") for node in grid_map.nodes.values()}
         f_score[start] = haversine(start.lat, start.lon, goal.lat, goal.lon)
-
+        #DEBUG-------------------------------------------------------------------------------
+        print(f"Debugging: Initial heuristic value: {f_score[start]}")
         #path reconstruction
         came_from = {}
 
@@ -262,11 +266,15 @@ class Pathing:
 
             #search for node in open set with the lowest f_score value
             current = heapq.heappop(open_set)[1]
-
+            #DEBUG-----------------------------------------------------------------
+            print(f"Debugging: Current Node: {current}") 
             if current == goal:
-
+                #DEBUG-----------------------------------------------------------------------
+                print("Debugging: Goal reached, reconstructing path.")
                 #reconstruct the path
                 path = []
+                #DEBUG---------------------------------------------------------------------------------
+                print(f"Debugging: Reconstructed path: {path}")
 
                 while current in came_from:
                     #add to the path
@@ -280,8 +288,11 @@ class Pathing:
             closed_set.add(current)
 
             for neighbor in current.neighbors:
-
+                #DEBUG-----------------------------------------------------------------
+                print(f"Debugging: Evaluating neighbor: {neighbor}")
                 if Pathing.is_near_coast((neighbor.lat, neighbor.lon), coast_lines, threshold):
+                    #DEBUG----------------------------------------------------------------------
+                    print(f"Debugging: Neighbor {neighbor} is near coast and will be skipped.")
                     continue
                 
                 if neighbor in closed_set:
@@ -290,7 +301,8 @@ class Pathing:
 
                 #hesitant approach
                 tentative_g_score = g_score[current] + haversine(current.lat, current.lon, neighbor.lat, neighbor.lon)
-
+                #DEBUG-----------------------------------------------------------------------------
+                print(f"Debugging: Tentative G Score for {neighbor}: {tentative_g_score}")
                 #performance here is questionable
                 if neighbor not in open_set_tracker:
                     heapq.heappush(open_set, (f_score[neighbor], neighbor))
