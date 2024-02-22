@@ -166,6 +166,23 @@ def simulate(request):
     #obtaining the a_star path
     result = Pathing.a_star(request, grid_map)
 
+    ''' 
+    For comparison reasons, the following lines draw over my folium grid.
+    Uncomment with caution because it's going to draw all your computational power.
+    for node in grid_map.nodes.values():
+        folium.CircleMarker(
+            location=[node.lat, node.lon],
+            radius=1,
+            color='blue'
+        ).add_to(m)
+
+        for neighbor in node.neighbors:
+            folium.PolyLine(
+                locations=[(node.lat, node.lon), (neighbor.lat, neighbor.lon)],
+                weight=1,
+                color='green'
+            ).add_to(m)
+    '''
     if result:
         path, distance = result
 
