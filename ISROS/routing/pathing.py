@@ -205,16 +205,16 @@ class Pathing:
     def get_restrictions():
         #https://github.com/genthalili/searoute-py/issues/25
         pass
-'''
-Here is some output that might help while debugging:
-create_nodes() triggered
-Debugging: Starting A* algorithm
-start_coords = {'name': 'Wolfe Island', 'latitude': '44.2', 'longitude': '-76.433333'}
-goald_coords = {'name': 'Charlestown', 'latitude': '50.333333', 'longitude': '-4.75'}
-Initial node set, None
-End node set, None
-Figure what's wrong this time.
-'''
+    '''
+    Here is some output that might help while debugging:
+    create_nodes() triggered
+    Debugging: Starting A* algorithm
+    start_coords = {'name': 'Wolfe Island', 'latitude': '44.2', 'longitude': '-76.433333'}
+    goald_coords = {'name': 'Charlestown', 'latitude': '50.333333', 'longitude': '-4.75'}
+    Initial node set, None
+    End node set, None
+    Figure what's wrong this time.
+    ''' 
     def a_star(request, grid_map):
         print("Debugging: Starting A* algorithm")
         try:
@@ -343,6 +343,7 @@ Figure what's wrong this time.
             return None
         except Exception as e:
             print(f"Exception occurred: {e}")
+
     def dijkstra():
         pass
 
