@@ -45,6 +45,7 @@ class GridMap:
         for lat in np.arange(-90, 90, self.resolution):
             for lon in np.arange(-180, 180, self.resolution):
                 nodes[(lat, lon)] = Node(lat, lon)
+        print("create_nodes() triggered")
         return nodes
     
 
@@ -135,6 +136,7 @@ class Pathing:
                     # Swap the coordinates from (lon, lat) to (lat, lon)
                     coords = [(y, x) for x, y in line.coords]
                     lines.append(coords)
+        print("is_coast() method triggered")
         return lines
     
     def is_near_coast(self, point, coast_lines, threshold):
@@ -146,7 +148,7 @@ class Pathing:
             #rough conversion from degrees to kilometers
             if shapely_point.distance(shapely_line) / 111.32 > threshold :
                 return True
-        
+        print("is_near_coast() method triggered")
         return False
     
     def near_coast_proximity(grid, coast_lines, threshold):
@@ -154,6 +156,7 @@ class Pathing:
             for y in range(len(grid[x])):
                 if Pathing.is_near_coast((x, y), coast_lines, threshold):
                     grid[x][y].walkable = False
+        print("Found near coast proximity")
 
     
     
@@ -202,7 +205,16 @@ class Pathing:
     def get_restrictions():
         #https://github.com/genthalili/searoute-py/issues/25
         pass
-
+'''
+Here is some output that might help while debugging:
+create_nodes() triggered
+Debugging: Starting A* algorithm
+start_coords = {'name': 'Wolfe Island', 'latitude': '44.2', 'longitude': '-76.433333'}
+goald_coords = {'name': 'Charlestown', 'latitude': '50.333333', 'longitude': '-4.75'}
+Initial node set, None
+End node set, None
+Figure what's wrong this time.
+'''
     def a_star(request, grid_map):
         print("Debugging: Starting A* algorithm")
         try:
@@ -211,10 +223,14 @@ class Pathing:
             ports = parse_ports()
 
             start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
+            print(f"start_coords = {start_coords}")
             goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
+            print(f"goald_coords = {goal_coords}")
             
             start = grid_map.get_node(start_coords["latitude"], start_coords["longitude"])
+            print(f"Initial node set, {start}")
             goal = grid_map.get_node(goal_coords["latitude"], goal_coords["longitude"])
+            print(f"End node set, {goal}")
 
             if start is None or goal is None:
                 messages.error(request, "One or both locations not found.")
@@ -222,7 +238,6 @@ class Pathing:
             #DEBUG------------------------------------------------------------------
             print(f"Debugging: Start Node: {start}, Goal Node: {goal}")
                 
-            
             #implement Heuristics
             def haversine(lat1, lon1, lat2, lon2):
                 #convert decimal degrees to radians
