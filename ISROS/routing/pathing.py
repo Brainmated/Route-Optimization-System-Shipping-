@@ -78,7 +78,7 @@ class GridMap:
 
                 if neighbor:
                     node.neighbors.append(neighbor)
-
+        print("add_edges() method triggered")
 
     def get_node(self, lat, lon):
 
