@@ -44,7 +44,7 @@ class GridMap:
         nodes = {}
         for lat in np.arange(-90, 90, self.resolution):
             for lon in np.arange(-180, 180, self.resolution):
-                nodes[(lat, lon)] = Node(lat, lon)
+                nodes[(float(lat), float(lon))] = Node(lat, lon)
         print("create_nodes() triggered")
         return nodes
     
@@ -81,9 +81,17 @@ class GridMap:
         print("add_edges() method triggered")
 
     def get_node(self, lat, lon):
+        
+        grid_lat = float(round(lat/self.resolution) * self.resolution)
+        grid_lon = float(round(lon/self.resolution) * self.resolution)
 
-        return self.nodes.get((lat, lon))
-        pass
+        #wrap longitude if necessary
+        if grid_lon < -180:
+            grid_lon += 360
+        elif grid_lon > 180:
+            grid_lon -= 360
+        return self.nodes.get((grid_lat, grid_lon))
+    
 '''
 class Map_Marking:
 
@@ -227,9 +235,9 @@ class Pathing:
             goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
             print(f"goald_coords = {goal_coords}")
             
-            start = grid_map.get_node(start_coords["latitude"], start_coords["longitude"])
+            start = grid_map.get_node(float(start_coords["latitude"]), float(start_coords["longitude"]))
             print(f"Initial node set, {start}")
-            goal = grid_map.get_node(goal_coords["latitude"], goal_coords["longitude"])
+            goal = grid_map.get_node(float(goal_coords["latitude"]), float(goal_coords["longitude"]))
             print(f"End node set, {goal}")
 
             if start is None or goal is None:
