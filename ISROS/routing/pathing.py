@@ -33,12 +33,7 @@ class Node:
         return hash((self.lat, self.lon))
     
     def is_valid(self):
-        return {
-            self.lat is not None and
-            self.lon is not None and
-            -90 <= self.lat <= 90 and
-            -180 <= self.lon <= 180
-        }
+        return self.lat is not None and self.lon is not None and -90 <= self.lat <= 90 and -180 <= self.lon <= 180
 
 '''
 The GridMap class creates a node for every integer latitude/longitude
