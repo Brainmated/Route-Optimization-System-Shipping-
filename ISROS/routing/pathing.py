@@ -52,7 +52,6 @@ class GridMap:
         for lat in np.arange(-90, 90, self.resolution):
             for lon in np.arange(-180, 180, self.resolution):
                 nodes[(float(lat), float(lon))] = Node(lat, lon)
-        print("create_nodes() triggered")
         return nodes
     
 
@@ -85,7 +84,6 @@ class GridMap:
 
                 if neighbor:
                     node.neighbors.append(neighbor)
-        print("add_edges() method triggered")
 
     def get_node(self, lat, lon):
         
@@ -151,19 +149,22 @@ class Pathing:
                     # Swap the coordinates from (lon, lat) to (lat, lon)
                     coords = [(y, x) for x, y in line.coords]
                     lines.append(coords)
-        print("is_coast() method triggered")
         return lines
     
     def is_near_coast(point, coast_lines, threshold):
         shapely_point = Point(point[1], point[0])
 
+        if not shapely_point.is_valid:
+            raise ValueError(f"Invalid point geometry: {shapely_point}")
+        
         for line in coast_lines:
             shapely_line = LineString(line)
-
+            if not shapely_line.is_valid:
+                raise ValueError(f"Invalid line geometry: {shapely_line}")
+            
             #rough conversion from degrees to kilometers
             if shapely_point.distance(shapely_line) / 111.32 > threshold :
                 return True
-        print("is_near_coast() method triggered")
         return False
     
     def near_coast_proximity(grid, coast_lines, threshold):
@@ -231,7 +232,6 @@ class Pathing:
     Figure what's wrong this time.
     ''' 
     def a_star(request, grid_map):
-        print("Debugging: Starting A* algorithm")
         try:
             loc_a_name = request.POST.get("locationA")
             loc_b_name = request.POST.get("locationB")
@@ -274,7 +274,7 @@ class Pathing:
             heapq.heappush(open_set, (0, start))
             open_set_tracker.add(start)
             #DEBUG--------------------------------------------------------------------
-            print(f"Debugging: Open set size after adding start: {len(open_set)}")
+            print(f"Open set tracker before removing the current node: {open_set_tracker}")
             #closed sets contain nodes that have been evaluated
             closed_set = set()
 
@@ -299,6 +299,7 @@ class Pathing:
 
                 #search for node in open set with the lowest f_score value
                 current = heapq.heappop(open_set)[1]
+                open_set_tracker.remove(current)
                 #DEBUG-----------------------------------------------------------------
                 print(f"Debugging: Current Node: {current}") 
                 if current == goal:
@@ -336,6 +337,13 @@ class Pathing:
                     tentative_g_score = g_score[current] + haversine(current.lat, current.lon, neighbor.lat, neighbor.lon)
                     #DEBUG-----------------------------------------------------------------------------
                     print(f"Debugging: Tentative G Score for {neighbor}: {tentative_g_score}")
+
+                    if tentative_g_score < g_score.get(neighbor, float("inf")):
+                        came_from[neighbor] = current
+                        g_score[neighbor] = tentative_g_score
+                        f_score[neighbor] = tentative_g_score + haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
+
+
                     #performance here is questionable
                     if neighbor not in open_set_tracker:
                         heapq.heappush(open_set, (f_score[neighbor], neighbor))
@@ -352,12 +360,12 @@ class Pathing:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
                     f_score[neighbor] = tentative_g_score +haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
-                    
-            sys.stdout.flush()
+
             #the optimal path isnt found
             return None
-        except Exception as e:
-            print(traceback.format_exc())
+        except KeyError as e:
+            print(f"Key error encountered: {e}")
+            print(f"Current state of open_set_tracker: {open_set_tracker}")
 
     def dijkstra():
         pass
