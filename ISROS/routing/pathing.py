@@ -20,18 +20,25 @@ from shapely.geometry import Point, Polygon
 
 class Node:
     def __init__(self, lat, lon):
-        self.lat = lat
-        self.lon = lon
+        self.lat = float(lat) if lat is not None else None
+        self.lon = float(lon) if lon is not None else None
         self.neighbors = []
 
     def __eq__(self, other):
+        if not isinstance(other, Node):
+            return NotImplemented
         return (self.lat, self.lon) == (other.lat, other.lon)
     
     def __hash__(self):
         return hash((self.lat, self.lon))
     
     def is_valid(self):
-        return self.lat is not None and self.lon is not None
+        return {
+            self.lat is not None and
+            self.lon is not None and
+            -90 <= self.lat <= 90 and
+            -180 <= self.lon <= 180
+        }
 
 '''
 The GridMap class creates a node for every integer latitude/longitude
