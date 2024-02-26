@@ -4,6 +4,7 @@ import shapely.geometry
 from shapely.geometry import Point, LineString, MultiLineString
 import os
 import sys
+import traceback
 import numpy as np
 import networkx as nx
 import random
@@ -22,6 +23,12 @@ class Node:
         self.lat = lat
         self.lon = lon
         self.neighbors = []
+
+    def __eq__(self, other):
+        return (self.lat, self.lon) == (other.lat, other.lon)
+    
+    def __hash__(self):
+        return hash((self.lat, self.lon))
 
 '''
 The GridMap class creates a node for every integer latitude/longitude
@@ -86,7 +93,7 @@ class GridMap:
         grid_lon = float(round(lon/self.resolution) * self.resolution)
 
         #wrap longitude if necessary
-        if grid_lon < -180:
+        if grid_lon <= -180:
             grid_lon += 360
         elif grid_lon > 180:
             grid_lon -= 360
@@ -147,7 +154,7 @@ class Pathing:
         print("is_coast() method triggered")
         return lines
     
-    def is_near_coast(self, point, coast_lines, threshold):
+    def is_near_coast(point, coast_lines, threshold):
         shapely_point = Point(point[1], point[0])
 
         for line in coast_lines:
@@ -350,7 +357,7 @@ class Pathing:
             #the optimal path isnt found
             return None
         except Exception as e:
-            print(f"Exception occurred: {e}")
+            print(traceback.format_exc())
 
     def dijkstra():
         pass
