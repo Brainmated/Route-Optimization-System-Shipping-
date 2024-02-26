@@ -29,6 +29,9 @@ class Node:
     
     def __hash__(self):
         return hash((self.lat, self.lon))
+    
+    def is_valid(self):
+        return self.lat is not None and self.lon is not None
 
 '''
 The GridMap class creates a node for every integer latitude/longitude
@@ -237,7 +240,8 @@ class Pathing:
             raise ValueError(f"Latitude {lat} is out of bounds. Must be between -90 and 90.")
         if not -180 <= lon <= 180:
             raise ValueError(f"Longitude {lon} is out of bounds. Must be between -180 and 180.")
-    
+        
+
     def a_star(request, grid_map):
         try:
             loc_a_name = request.POST.get("locationA")
@@ -254,12 +258,14 @@ class Pathing:
             goal = grid_map.get_node(float(goal_coords["latitude"]), float(goal_coords["longitude"]))
             print(f"End node set, {goal}")
 
-            if not start.is_valid or not goal.is_valid:
-                raise ValueError("One or more nodes are invalid.")
-            
             if start is None or goal is None:
                 messages.error(request, "One or both locations not found.")
                 return None
+            
+            if not start.is_valid or not goal.is_valid:
+                raise ValueError("One or more nodes are invalid.")
+            
+            
             #DEBUG------------------------------------------------------------------
             print(f"Debugging: Start Node: {start}, Goal Node: {goal}")
             
@@ -305,6 +311,15 @@ class Pathing:
             #threshold of at least 10 km away from the coast
             threshold = 10
 
+            def reconstruct_path(came_from, current):
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                path.append(current)
+                path.reverse()
+                return path
+    
             while open_set:
 
                 #search for node in open set with the lowest f_score value
@@ -312,6 +327,7 @@ class Pathing:
                 open_set_tracker.remove(current)
                 #DEBUG-----------------------------------------------------------------
                 print(f"Debugging: Current Node: {current}") 
+
                 if current == goal:
                     print("Debugg: Goal reached, reconstructing path.")
                     return reconstruct_path(came_from, current)
@@ -339,7 +355,7 @@ class Pathing:
                         came_from[neighbor] = current
                         g_score[neighbor] = tentative_g_score
                         f_score[neighbor] = tentative_g_score + haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
-                        
+
                         # Add the neighbor to the open set if it's not there already
                         if neighbor not in open_set_tracker:
                             heapq.heappush(open_set, (f_score[neighbor], neighbor))
@@ -358,16 +374,6 @@ class Pathing:
         except KeyError as e:
             print(f"Key error encountered: {e}")
             print(f"Current state of open_set_tracker: {open_set_tracker}")
-
-    #path reconstruction will be used for all algorithms
-    def reconstruct_path(came_from, current):
-        path = []
-        while current in came_from:
-            path.append(current)
-            current = came_from[current]
-        path.append(current)
-        path.reverse()
-        return path
     
     def dijkstra():
         pass
