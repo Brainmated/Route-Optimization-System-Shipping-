@@ -184,11 +184,13 @@ def simulate(request):
             ).add_to(m)
     '''
     try:
-        dijkstra_path_coords = Pathing.dijkstra(request, grid_map)
+        dijkstra_path = Pathing.dijkstra(request, grid_map)
         # Draw the Dijkstra path on the map
-        folium.PolyLine(dijkstra_path_coords, color="green", weight=2, opacity=1).add_to(m)
+        folium.PolyLine(dijkstra_path, color="green", weight=2, opacity=1).add_to(m)
     except ValueError as e:
         print(f"Error in Dijkstra's algorithm: {e}")
+    except TypeError as e:
+        print(f"TypeError in Dijkstra's algorithm: {e}")
 
     if result:
         path, distance = result

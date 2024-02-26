@@ -379,7 +379,7 @@ class Pathing:
         loc_a_name = request.POST.get("locationA")
         loc_b_name = request.POST.get("locationB")
         
-        ports = parse_ports()  # Assume this function returns a list of ports with their details
+        ports = parse_ports() 
         
         loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
         loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
