@@ -377,8 +377,24 @@ class Pathing:
             print(f"Key error encountered: {e}")
             print(f"Current state of open_set_tracker: {open_set_tracker}")
     
-    def dijkstra(start_node, end_node):
+    def dijkstra(request):
+
+        loc_a_name = request.POST.get("locationA")
+        loc_b_name = request.POST.get("locationB")
+        ports = parse_ports()
+
+        start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
+        print(f"start_coords = {start_coords}")
+        goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
+        print(f"goal_coords = {goal_coords}")
+
+        if not start_coords or not goal_coords:
+            # Handle the case where the coordinates were not found
+            return None, float("inf")
         
+        start_node = start_coords
+        end_node = goal_coords
+
         visited = set()
         queue = [(0, start_node, [start_node])]
         heapq.heapify(queue)
@@ -391,11 +407,16 @@ class Pathing:
                 return path, current_distance
             visited.add(current_node)
 
-            for neighbor in current_node.neighbors:
+            # Iterate through the neighbors of the current node
+            # You need to implement the logic to find neighbors of the given coordinates
+            for neighbor in get_neighbors(current_node):
                 if neighbor not in visited:
-                    neighbor_distance = current_distance +1
+                    # Update the distance for the neighbor
+                    # The distance calculation will depend on the actual distances between points
+                    neighbor_distance = current_distance + calculate_distance(current_node, neighbor)
                     heapq.heappush(queue, (neighbor_distance, neighbor, path + [neighbor]))
-        return None, float("inf")
+
+    return None, float("inf")
 
     def visibility_graph():
         pass

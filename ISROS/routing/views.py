@@ -183,16 +183,16 @@ def simulate(request):
                 color='green'
             ).add_to(m)
     '''
+    result = dijkstra(request)
+
     if result:
         path, distance = result
-
-        #extract coordinates
-        path_coords = [(node.lat, node.lon) for node in path]
-
-        #draw path
+        # Extract coordinates from the path
+        path_coords = [(coord['lat'], coord['lon']) for coord in path]
+        # Draw the path on the map
         folium.PolyLine(path_coords, color="green", weight=2.5, opacity=1).add_to(m)
     else:
-        print("Figure what's wrong this time.")
+        print("No path found or start/goal coordinates not provided.")
         
     # Serialize the map to HTML
     map_html = m._repr_html_()
