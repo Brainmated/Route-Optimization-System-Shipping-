@@ -377,8 +377,25 @@ class Pathing:
             print(f"Key error encountered: {e}")
             print(f"Current state of open_set_tracker: {open_set_tracker}")
     
-    def dijkstra():
-        pass
+    def dijkstra(start_node, end_node):
+        
+        visited = set()
+        queue = [(0, start_node, [start_node])]
+        heapq.heapify(queue)
+        while queue:
+            current_distance, current_node, path = heapq.heappop(queue)
+            if current_node in visited:
+                continue
+
+            if current_node == end_node:
+                return path, current_distance
+            visited.add(current_node)
+
+            for neighbor in current_node.neighbors:
+                if neighbor not in visited:
+                    neighbor_distance = current_distance +1
+                    heapq.heappush(queue, (neighbor_distance, neighbor, path + [neighbor]))
+        return None, float("inf")
 
     def visibility_graph():
         pass
