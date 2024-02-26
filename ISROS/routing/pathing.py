@@ -124,9 +124,8 @@ class Pathing:
 
 
     
-    def __init__(self, location1, location2, grid_map):
-        self.location1 = location1
-        self.location2 = location2
+    def __init__(self, grid_map):
+
         self.grid_map = grid_map
 
     @staticmethod

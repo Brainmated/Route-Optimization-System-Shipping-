@@ -162,9 +162,9 @@ def simulate(request):
 
     #obtaining the straight_path
     m, formatted_distance = Pathing.straight_path(request, m)
-    
-    #obtaining the a_star path
-    result = Pathing.a_star(request, grid_map)
+
+    #obtaining the a_star path -------------------------------------------------------------------------------------------------------FIX
+    #result = Pathing.a_star(request, grid_map)
 
     ''' 
     For comparison reasons, the following lines draw over my folium grid.
@@ -185,21 +185,14 @@ def simulate(request):
     '''
     try:
         dijkstra_path = Pathing.dijkstra(request, grid_map)
-        # Draw the Dijkstra path on the map
         folium.PolyLine(dijkstra_path, color="green", weight=2, opacity=1).add_to(m)
     except ValueError as e:
         print(f"Error in Dijkstra's algorithm: {e}")
     except TypeError as e:
-        print(f"TypeError in Dijkstra's algorithm: {e}")
+        print(f"Type Error in Dijkstra's algorithm: {e}")
 
-    if result:
-        path, distance = result
-        # Extract coordinates from the path
-        path_coords = [(coord['lat'], coord['lon']) for coord in path]
-        # Draw the path on the map
-        folium.PolyLine(path_coords, color="green", weight=2.5, opacity=1).add_to(m)
-    else:
-        print("No path found or start/goal coordinates not provided.")
+
+
         
     # Serialize the map to HTML
     map_html = m._repr_html_()
