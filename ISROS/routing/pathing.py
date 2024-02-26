@@ -186,9 +186,7 @@ class Pathing:
         # Extract location A and B from the POST data
         loc_a_name = request.POST.get("locationA")
         loc_b_name = request.POST.get("locationB")
-
-        # Assume parse_ports() function returns a list of ports with their details (implement this)
-        ports = parse_ports()  # This function needs to be defined elsewhere in your application
+        ports = parse_ports() 
 
         loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
         loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
@@ -377,46 +375,65 @@ class Pathing:
             print(f"Key error encountered: {e}")
             print(f"Current state of open_set_tracker: {open_set_tracker}")
     
-    def dijkstra(request):
-
+    def dijkstra(self, request, grid_map):
         loc_a_name = request.POST.get("locationA")
         loc_b_name = request.POST.get("locationB")
-        ports = parse_ports()
-
-        start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
-        print(f"start_coords = {start_coords}")
-        goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
-        print(f"goal_coords = {goal_coords}")
-
-        if not start_coords or not goal_coords:
-            # Handle the case where the coordinates were not found
-            return None, float("inf")
         
-        start_node = start_coords
-        end_node = goal_coords
-
-        visited = set()
-        queue = [(0, start_node, [start_node])]
-        heapq.heapify(queue)
-        while queue:
-            current_distance, current_node, path = heapq.heappop(queue)
-            if current_node in visited:
-                continue
-
+        ports = parse_ports()  # Assume this function returns a list of ports with their details
+        
+        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
+        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
+        
+        if loc_a is None or loc_b is None:
+            raise ValueError("One or both locations not found.")
+        
+        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
+        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
+        
+        # Convert coordinates to nodes
+        start_node = grid_map.get_node(*loc_a_coord)
+        end_node = grid_map.get_node(*loc_b_coord)
+        
+        # Initialize distances and previous nodes
+        distances = {node: float('infinity') for node in grid_map.nodes.values()}
+        previous_nodes = {node: None for node in grid_map.nodes.values()}
+        distances[start_node] = 0
+        
+        # Initialize priority queue and add the start node
+        pq = [(0, start_node)]
+        
+        while pq:
+            current_distance, current_node = heapq.heappop(pq)
+            
             if current_node == end_node:
-                return path, current_distance
-            visited.add(current_node)
-
-            # Iterate through the neighbors of the current node
-            # You need to implement the logic to find neighbors of the given coordinates
-            for neighbor in get_neighbors(current_node):
-                if neighbor not in visited:
-                    # Update the distance for the neighbor
-                    # The distance calculation will depend on the actual distances between points
-                    neighbor_distance = current_distance + calculate_distance(current_node, neighbor)
-                    heapq.heappush(queue, (neighbor_distance, neighbor, path + [neighbor]))
-
-    return None, float("inf")
+                break  # We found the shortest path to the end node
+            
+            for neighbor in current_node.neighbors:
+                # Check if the neighbor is a coastline or near a coastline
+                if self.is_coast(neighbor) or self.is_near_coast(neighbor):
+                    continue  # Skip the neighbor if it's not passable
+                
+                # Calculate the distance to the neighbor
+                distance = great_circle((current_node.lat, current_node.lon), (neighbor.lat, neighbor.lon)).kilometers
+                new_distance = current_distance + distance
+                
+                if new_distance < distances[neighbor]:
+                    distances[neighbor] = new_distance
+                    previous_nodes[neighbor] = current_node
+                    heapq.heappush(pq, (new_distance, neighbor))
+        
+        # Reconstruct the path from end_node to start_node
+        path = []
+        current = end_node
+        while current is not None:
+            path.insert(0, current)
+            current = previous_nodes[current]
+        
+        # Convert nodes back to coordinates for the output path
+        path_coordinates = [(node.lat, node.lon) for node in path]
+        
+        return path_coordinates
+        
 
     def visibility_graph():
         pass
