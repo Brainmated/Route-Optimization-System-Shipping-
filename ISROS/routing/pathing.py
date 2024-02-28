@@ -159,8 +159,9 @@ class Pathing:
         self.grid_map = grid_map
 
     @staticmethod
-    def is_land():
-        pass
+    def is_land(lat, lon):
+        point = Point(lon, lat)
+        return any(land.contains(point) for land in GridMap.land.geometry)
     
     def is_ocean():
         pass
@@ -477,6 +478,28 @@ class Pathing:
         
         # Initialize priority queue and add the start node
         pq = [(0, start_node.id, start_node)]
+        
+        '''For Option 2 in integrating the land shapefile
+        while pq:
+        current_distance, node_id, current_node = heapq.heappop(pq)
+
+        if current_node == end_node:
+            break  # We found the shortest path to the end node
+
+        for neighbor in current_node.neighbors:
+            # Check if the neighbor is on land
+            if GridMap.is_land(neighbor.lat, neighbor.lon):
+                continue  # Skip the neighbor if it's on land
+
+            # Calculate the distance to the neighbor
+            distance = GridMap.calculate_distance(current_node, neighbor)
+            new_distance = current_distance + distance
+
+            if new_distance < distances[neighbor]:
+                distances[neighbor] = new_distance
+                previous_nodes[neighbor] = current_node
+                heapq.heappush(pq, (new_distance, neighbor.id, neighbor))
+        '''
         
         while pq:
             current_distance, node_id, current_node = heapq.heappop(pq)
