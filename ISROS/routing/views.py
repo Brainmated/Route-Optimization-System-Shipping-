@@ -200,7 +200,7 @@ def simulate(request):
     '''
     try:
         pathing_instance = Pathing(grid_map)
-        dijkstra_path = pathing_instance.dijkstra(request, grid_map)
+        dijkstra_path = pathing_instance.dijkstra2(request, grid_map)
         folium.PolyLine(dijkstra_path, color="green", weight=2, opacity=1).add_to(m)
     except ValueError as e:
         print(f"Error in Dijkstra's algorithm: {e}")

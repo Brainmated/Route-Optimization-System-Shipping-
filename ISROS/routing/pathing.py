@@ -15,7 +15,7 @@ import geopandas as gpd
 from .ports import parse_ports
 from django.contrib import messages
 from geopy.distance import great_circle
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, MultiPolygon
 import time
 
 
@@ -114,6 +114,22 @@ class GridMap:
             grid_lon -= 360
         return self.nodes.get((grid_lat, grid_lon))
     
+    def land_nodes(self):
+        land_nodes = set()
+        land_areas = Pathing.is_land()
+
+        for node in land_areas:
+            if node.is_valid():
+                land_nodes.add(node)
+
+        return land_nodes
+    
+    def init_land(self, land_data):
+        self.land_nodes = set(land_data)
+
+    def is_land_node(self, node):
+        return node in self.land_nodes
+    
     def coastal_nodes(self):
         coastal_nodes = set()
         coastline_nodes = Pathing.is_coast()
@@ -160,8 +176,19 @@ class Pathing:
 
     @staticmethod
     def is_land(lat, lon):
-        point = Point(lon, lat)
-        return any(land.contains(point) for land in GridMap.land.geometry)
+        land_areas = []
+        node_id = 0
+        for _, row in Pathing.land.iterrows():
+            geometry = row["geometry"]
+            if isinstance(geometry, Polygon):
+                land_areas += [Node(node_id, *coords) for coords in geometry.exterior.coords]
+                node_id += len(geometry.exterior.coords)
+            elif isinstance(geometry, MultiPolygon):
+                for polygon in geometry:
+                    land_areas += [Node(node_id, *coords) for coords in polygon.exterior.coords]
+                    node_id += len(polygon.exterior.coords)
+        
+        return land_areas
     
     def is_ocean():
         pass
@@ -444,8 +471,8 @@ class Pathing:
         except KeyError as e:
             print(f"Key error encountered: {e}")
             print(f"Current state of open_set_tracker: {open_set_tracker}")
-    
-    def dijkstra(self, request, grid_map):
+
+    def dijkstra1(self, request, grid_map):
 
         coastline_data = Pathing.is_coast()
         max_gap_distance = 0.5
@@ -503,8 +530,6 @@ class Pathing:
         
         while pq:
             current_distance, node_id, current_node = heapq.heappop(pq)
-            
-            
             if current_node == end_node:
                 break  # We found the shortest path to the end node
             
@@ -534,7 +559,69 @@ class Pathing:
         
         return path_coordinates
         
+    def dijkstra2(self, request, grid_map):
 
+        coastline_data = Pathing.is_coast()
+        max_gap_distance = 0.5
+        connected_coastline = Pathing.connect_coastline_gaps(coastline_data, max_gap_distance)
+        grid_map.init_coastline(coastline_data)
+        
+
+        loc_a_name = request.POST.get("locationA")
+        loc_b_name = request.POST.get("locationB")
+        
+        ports = parse_ports() 
+        
+        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
+        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
+        
+        if loc_a is None or loc_b is None:
+            raise ValueError("One or both locations not found.")
+        
+        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
+        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
+        
+        # Convert coordinates to nodes
+        start_node = grid_map.get_node(*loc_a_coord)
+        end_node = grid_map.get_node(*loc_b_coord)
+        
+        # Initialize distances and previous nodes
+        distances = {node: float('infinity') for node in grid_map.nodes.values()}
+        previous_nodes = {node: None for node in grid_map.nodes.values()}
+        distances[start_node] = 0
+        
+        # Initialize priority queue and add the start node
+        pq = [(0, start_node.id, start_node)]
+
+        while pq:
+            current_distance, node_id, current_node = heapq.heappop(pq)
+
+            if current_node == end_node:
+                break
+            for neighbor in current_node.neighbors:
+                if Pathing.is_land(neighbor.lat, neighbor.lon):
+                    continue
+
+            distance = GridMap.calculate_distance(current_node, neighbor)
+            new_distance = current_distance + distance
+
+            if new_distance < distances[neighbor]:
+                distances[neighbor] = new_distance
+                previous_nodes[neighbor] = current_node
+                heapq.heappush(pq, (new_distance, neighbor.id, neighbor))
+
+        # Reconstruct the path from end_node to start_node
+        path = []
+        current = end_node
+        while current is not None:
+            path.insert(0, current)
+            current = previous_nodes[current]
+        
+        # Convert nodes back to coordinates for the output path
+        path_coordinates = [(node.lat, node.lon) for node in path]
+        
+        return path_coordinates
+    
     def visibility_graph():
         pass
 
