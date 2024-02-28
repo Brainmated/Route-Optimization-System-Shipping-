@@ -16,9 +16,12 @@ from .ports import parse_ports
 from django.contrib import messages
 from geopy.distance import great_circle
 from shapely.geometry import Point, Polygon
+import time
 
 
 class Node:
+    start_time = time.time()
+
     def __init__(self, id, lat, lon):
         self.id = id
         self.lat = float(lat) if lat is not None else None
@@ -38,7 +41,9 @@ class Node:
     
     def is_valid(self):
         return self.lat is not None and self.lon is not None and -90 <= self.lat <= 90 and -180 <= self.lon <= 180
-
+    end_time = time.time()
+    comp_time = end_time - start_time
+    print(f"Nodes: {comp_time}")
 '''
 The GridMap class creates a node for every integer latitude/longitude
 intersection and then adds edges to each node's neighbors.
@@ -47,7 +52,7 @@ handles wrapping of the map so the eastern most and western most edges connect.
 '''
 
 class GridMap:
-    
+    start_time = time.time()
     #current method will test for the 1° x 1° grid
     def __init__(self, resolution=1.0):
         self.resolution = resolution
@@ -124,6 +129,11 @@ class GridMap:
     
     def is_coastal_node(self, node):
         return node in self.coastal_nodes
+    
+    end_time = time.time()
+    comp_time = end_time - start_time
+    print(f"Grid Map: {comp_time}")
+
 '''
 class Map_Marking:
 
@@ -139,13 +149,11 @@ class Map_Marking:
 '''
 
 class Pathing:
-
+    start_time = time.time()
     script_dir = os.path.dirname(os.path.abspath(__file__))
     land = gpd.read_file("routing/data/ne_10m_land.shp")
     coastline = gpd.read_file("routing/data/ne_10m_coastline.shp")
 
-
-    
     def __init__(self, grid_map):
 
         self.grid_map = grid_map
@@ -181,16 +189,15 @@ class Pathing:
         for i in range(len(coastline_nodes)-1):
             current_node = coastline_nodes[i]
             next_node = coastline_nodes[i+1]
-            gap_distance = calculate_distance(current_node, next_node)
+            gap_distance = Pathing.calculate_distance(current_node, next_node)
 
             if gap_distance > max_gap_distance:
                 new_lat = (current_node.lat + next_node.lat) / 2
                 new_lon = (current_node.lon + next_node.lon) / 2
                 new_node = Node(node_id, new_lat, new_lon)
+                connected_coastline.extend([current_node, new_node])
                 node_id += 1
 
-                connected_coastline.append(current_node)
-                connected_coastline.append(new_node)
             else:
                 connected_coastline.append(current_node)
 
@@ -198,6 +205,7 @@ class Pathing:
 
         return connected_coastline
     
+    @staticmethod
     def calculate_distance(node1, node2):
 
         R = 6371.0
@@ -210,7 +218,7 @@ class Pathing:
         dlat = lat2 - lat1
         dlon = lon2 - lon1
 
-        a = sin(dlat/2)**2 + cos(lat1) * cost(lat2) * sin(dlon/2)**2
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
         c = 2*asin(sqrt(a))
 
         distance = R*c
@@ -439,7 +447,10 @@ class Pathing:
     def dijkstra(self, request, grid_map):
 
         coastline_data = Pathing.is_coast()
+        max_gap_distance = 0.5
+        connected_coastline = Pathing.connect_coastline_gaps(coastline_data, max_gap_distance)
         grid_map.init_coastline(coastline_data)
+        
 
         loc_a_name = request.POST.get("locationA")
         loc_b_name = request.POST.get("locationB")
@@ -503,3 +514,7 @@ class Pathing:
 
     def visibility_graph():
         pass
+
+    end_time = time.time()
+    comp_time = end_time - start_time
+    print(f"Pathing: {comp_time}")
