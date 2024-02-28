@@ -599,7 +599,7 @@ class Pathing:
             if current_node == end_node:
                 break
             for neighbor in current_node.neighbors:
-                if Pathing.is_land(neighbor.lat, neighbor.lon):
+                if Pathing.is_land_node(neighbor.lat, neighbor.lon):
                     continue
 
             distance = GridMap.calculate_distance(current_node, neighbor)
