@@ -48,10 +48,11 @@ class GridMap:
     def __init__(self, resolution=1.0):
         self.resolution = resolution
         self.nodes = self.create_nodes()
+        self.coastal_nodes = self.coastal_nodes()
+        self.add_edges()
 
     #method that creates nodes on the grid to help map the cells
     def create_nodes(self):
-
         #set nodes as a dictionary and set attributes
         nodes = {}
         for lat in np.arange(-90, 90, self.resolution):
@@ -102,6 +103,19 @@ class GridMap:
             grid_lon -= 360
         return self.nodes.get((grid_lat, grid_lon))
     
+    def coastal_nodes(self):
+        coastal_nodes = set()
+        coastline_segments = Pathing.is_coast()
+
+        for segment in coastline_segments:
+            for node in segment:
+                if node.is_valid():
+                    coastal_nodes.add(node)
+        
+        return coastal_nodes
+    
+    def is_coastal_node(self, node):
+        return node in self.coastal_nodes
 '''
 class Map_Marking:
 
@@ -138,22 +152,14 @@ class Pathing:
     #------------------------SUCCESS-------------------------------------------------------------
     @staticmethod
     def is_coast():
-        lines = []
-        # Iterate through each row of the coastline GeoDataFrame
+        coastline = []
         for _, row in Pathing.coastline.iterrows():
-            # Check if the geometry is a LineString
-            if isinstance(row['geometry'], LineString):
-                # Swap the coordinates from (lon, lat) to (lat, lon)
-                coords = [(y, x) for x, y in row['geometry'].coords]
-                lines.append(coords)
-            # Check if the geometry is a MultiLineString
-            elif isinstance(row['geometry'], MultiLineString):
-                # Extract coordinates from each component LineString
-                for line in row['geometry']:
-                    # Swap the coordinates from (lon, lat) to (lat, lon)
-                    coords = [(y, x) for x, y in line.coords]
-                    lines.append(coords)
-        return lines
+            if isinstance(row["geometry"], LineString):
+                coastline += [Node(y,x) for x, y in row["geometry"].coords]
+            elif isinstance(row["geometry"], MultiLineString):
+                for line in row["geometry"]:
+                    coastline += [Node(y,x) for x, y in line.coords]
+        return coastline
     
     def is_near_coast(point, coast_lines, threshold):
         shapely_point = Point(point[1], point[0])
@@ -375,6 +381,10 @@ class Pathing:
             print(f"Current state of open_set_tracker: {open_set_tracker}")
     
     def dijkstra(self, request, grid_map):
+
+        coastline_data = Pathing.is_coast()
+        grid_map = GridMap(coastline_data)
+
         loc_a_name = request.POST.get("locationA")
         loc_b_name = request.POST.get("locationB")
         
@@ -409,7 +419,7 @@ class Pathing:
             
             for neighbor in current_node.neighbors:
                 # Check if the neighbor is a coastline or near a coastline
-                if self.is_coast(neighbor) or self.is_near_coast(neighbor):
+                if self.is_coastal_node(neighbor):
                     continue  # Skip the neighbor if it's not passable
                 
                 # Calculate the distance to the neighbor
