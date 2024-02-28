@@ -137,7 +137,7 @@ def simulate(request):
     grid_size = 1
 
     #initialize resolution
-    grid_map = GridMap(resolution=grid_size)
+    grid_map = GridMap()
 
     #add the edges between the nodes
     grid_map.add_edges()
@@ -183,7 +183,21 @@ def simulate(request):
                 color='green'
             ).add_to(m)
     '''
+    '''
+    The following code draws the nodes on folium, uncomment with caution.
+    coastline_nodes = Pathing.is_coast()
     
+    # Iterate over the coastline nodes and draw them on the map
+    for node in coastline_nodes:
+        folium.CircleMarker(
+            location=[node.lat, node.lon],  # Ensure lat, lon order for folium
+            radius=1,
+            color='blue',  # Use a distinctive color for coastlines
+            fill=True,
+            fill_color='red',
+            fill_opacity=1.0
+        ).add_to(m)
+    '''
     try:
         pathing_instance = Pathing(grid_map)
         dijkstra_path = pathing_instance.dijkstra(request, grid_map)

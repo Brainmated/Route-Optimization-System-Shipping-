@@ -19,10 +19,14 @@ from shapely.geometry import Point, Polygon
 
 
 class Node:
-    def __init__(self, lat, lon):
+    def __init__(self, id, lat, lon):
+        self.id = id
         self.lat = float(lat) if lat is not None else None
         self.lon = float(lon) if lon is not None else None
         self.neighbors = []
+
+    def __lt__(self, other):
+        return self.id < other.id
 
     def __eq__(self, other):
         if not isinstance(other, Node):
@@ -55,9 +59,11 @@ class GridMap:
     def create_nodes(self):
         #set nodes as a dictionary and set attributes
         nodes = {}
+        node_id = 0
         for lat in np.arange(-90, 90, self.resolution):
             for lon in np.arange(-180, 180, self.resolution):
-                nodes[(float(lat), float(lon))] = Node(lat, lon)
+                nodes[(float(lat), float(lon))] = Node(node_id, lat, lon)
+                node_id += 1
         return nodes
     
 
@@ -113,7 +119,7 @@ class GridMap:
         
         return coastal_nodes
     
-    def initi_coastline(self, coastline_data):
+    def init_coastline(self, coastline_data):
         self.coastal_nodes = set(coastline_data)
     
     def is_coastal_node(self, node):
@@ -155,13 +161,61 @@ class Pathing:
     @staticmethod
     def is_coast():
         coastline = []
+        node_id = 0
         for _, row in Pathing.coastline.iterrows():
             if isinstance(row["geometry"], LineString):
-                coastline += [Node(y,x) for x, y in row["geometry"].coords]
+                coastline += [Node(node_id,y,x) for x, y in row["geometry"].coords]
+                node_id +=len(row["geometry"].coords)
+
             elif isinstance(row["geometry"], MultiLineString):
                 for line in row["geometry"]:
-                    coastline += [Node(y,x) for x, y in line.coords]
+                    coastline += [Node(node_id,y,x) for x, y in line.coords]
+                    node_id +=len(line.coords)
         return coastline
+    
+    def connect_coastline_gaps(coastline_nodes, max_gap_distance):
+
+        connected_coastline = []
+        node_id = len(coastline_nodes)
+
+        for i in range(len(coastline_nodes)-1):
+            current_node = coastline_nodes[i]
+            next_node = coastline_nodes[i+1]
+            gap_distance = calculate_distance(current_node, next_node)
+
+            if gap_distance > max_gap_distance:
+                new_lat = (current_node.lat + next_node.lat) / 2
+                new_lon = (current_node.lon + next_node.lon) / 2
+                new_node = Node(node_id, new_lat, new_lon)
+                node_id += 1
+
+                connected_coastline.append(current_node)
+                connected_coastline.append(new_node)
+            else:
+                connected_coastline.append(current_node)
+
+        connected_coastline.append(coastline_nodes[-1])
+
+        return connected_coastline
+    
+    def calculate_distance(node1, node2):
+
+        R = 6371.0
+
+        lat1 = radians(node1.lat)
+        lon1 = radians(node1.lon)
+        lat2 = radians(node2.lat)
+        lon2 = radians(node2.lon)
+
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+
+        a = sin(dlat/2)**2 + cos(lat1) * cost(lat2) * sin(dlon/2)**2
+        c = 2*asin(sqrt(a))
+
+        distance = R*c
+
+        return distance
     
     def is_near_coast(point, coast_lines, threshold):
         shapely_point = Point(point[1], point[0])
@@ -411,10 +465,11 @@ class Pathing:
         distances[start_node] = 0
         
         # Initialize priority queue and add the start node
-        pq = [(0, start_node)]
+        pq = [(0, start_node.id, start_node)]
         
         while pq:
-            current_distance, current_node = heapq.heappop(pq)
+            current_distance, node_id, current_node = heapq.heappop(pq)
+            
             
             if current_node == end_node:
                 break  # We found the shortest path to the end node
@@ -431,7 +486,7 @@ class Pathing:
                 if new_distance < distances[neighbor]:
                     distances[neighbor] = new_distance
                     previous_nodes[neighbor] = current_node
-                    heapq.heappush(pq, (new_distance, neighbor))
+                    heapq.heappush(pq, (new_distance, neighbor.id, neighbor))
         
         # Reconstruct the path from end_node to start_node
         path = []
