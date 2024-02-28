@@ -114,6 +114,9 @@ class GridMap:
         
         return coastal_nodes
     
+    def initi_coastline(self, coastline_data):
+        self.coastal_nodes = set(coastline_data)
+    
     def is_coastal_node(self, node):
         return node in self.coastal_nodes
 '''
@@ -383,7 +386,7 @@ class Pathing:
     def dijkstra(self, request, grid_map):
 
         coastline_data = Pathing.is_coast()
-        grid_map = GridMap(coastline_data)
+        grid_map.init_coastline(coastline_data)
 
         loc_a_name = request.POST.get("locationA")
         loc_b_name = request.POST.get("locationB")
@@ -419,7 +422,7 @@ class Pathing:
             
             for neighbor in current_node.neighbors:
                 # Check if the neighbor is a coastline or near a coastline
-                if self.is_coastal_node(neighbor):
+                if grid_map.is_coastal_node(neighbor):
                     continue  # Skip the neighbor if it's not passable
                 
                 # Calculate the distance to the neighbor
