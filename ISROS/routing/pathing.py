@@ -105,12 +105,11 @@ class GridMap:
     
     def coastal_nodes(self):
         coastal_nodes = set()
-        coastline_segments = Pathing.is_coast()
+        coastline_nodes = Pathing.is_coast()
 
-        for segment in coastline_segments:
-            for node in segment:
-                if node.is_valid():
-                    coastal_nodes.add(node)
+        for node in coastline_nodes:
+            if node.is_valid():
+                coastal_nodes.add(node)
         
         return coastal_nodes
     
