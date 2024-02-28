@@ -184,7 +184,7 @@ class Pathing:
                 land_areas += [Node(node_id, *coords) for coords in geometry.exterior.coords]
                 node_id += len(geometry.exterior.coords)
             elif isinstance(geometry, MultiPolygon):
-                for polygon in geometry:
+                for polygon in geometry.geoms:
                     land_areas += [Node(node_id, *coords) for coords in polygon.exterior.coords]
                     node_id += len(polygon.exterior.coords)
         
@@ -561,6 +561,8 @@ class Pathing:
         
     def dijkstra2(self, request, grid_map):
 
+        land_data = grid_map.land_nodes()
+        grid_map.init_land(land_data)
         coastline_data = Pathing.is_coast()
         max_gap_distance = 0.5
         connected_coastline = Pathing.connect_coastline_gaps(coastline_data, max_gap_distance)
@@ -595,20 +597,27 @@ class Pathing:
 
         while pq:
             current_distance, node_id, current_node = heapq.heappop(pq)
+            print(f"Processing node {node_id} at ({current_node.lat}, {current_node.lon}) with current distance {current_distance}")
+
+            if Pathing.is_land(current_node.lat, current_node.lon):
+                print(f"Node {node_id} is on land. Skipping.")
+                continue
 
             if current_node == end_node:
                 break
+
             for neighbor in current_node.neighbors:
-                if grid_map.is_land_node(neighbor.lat, neighbor.lon):
+                if grid_map.is_land_node(neighbor):
+                    print(f"Neighbor node {neighbor.id} at ({neighbor.lat}, {neighbor.lon}) is on land. Skipping.")
                     continue
 
-            distance = GridMap.calculate_distance(current_node, neighbor)
-            new_distance = current_distance + distance
+                distance = Pathing.calculate_distance(current_node, neighbor)
+                new_distance = current_distance + distance
 
-            if new_distance < distances[neighbor]:
-                distances[neighbor] = new_distance
-                previous_nodes[neighbor] = current_node
-                heapq.heappush(pq, (new_distance, neighbor.id, neighbor))
+                if new_distance < distances[neighbor]:
+                    distances[neighbor] = new_distance
+                    previous_nodes[neighbor] = current_node
+                    heapq.heappush(pq, (new_distance, neighbor.id, neighbor))
 
         # Reconstruct the path from end_node to start_node
         path = []
