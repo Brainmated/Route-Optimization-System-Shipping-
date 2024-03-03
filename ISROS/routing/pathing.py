@@ -199,8 +199,8 @@ class Map_Marking:
 class Pathing:
     start_time = time.time()
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    land = gpd.read_file("routing/data/ne_10m_land.shp")
-    coastline = gpd.read_file("routing/data/ne_10m_coastline.shp")
+    land = gpd.read_file("routing/data/geopackages/ne_10m_land.gpkg")
+    coastline = gpd.read_file("routing/data/geopackages/ne_10m_coastline.gpkg")
 
     def __init__(self, grid_map):
 
@@ -249,7 +249,7 @@ class Pathing:
         for i in range(len(coastline_nodes)-1):
             current_node = coastline_nodes[i]
             next_node = coastline_nodes[i+1]
-            gap_distance = Pathing.calculate_distance(current_node, next_node)
+            gap_distance = GridMap.calculate_distance(current_node, next_node)
 
             if gap_distance > max_gap_distance:
                 new_lat = (current_node.lat + next_node.lat) / 2
@@ -508,8 +508,8 @@ class Pathing:
         loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
         loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
         
-        start_node = grid_map.get_closest_node(loc_a_coord)
-        end_node = grid_map.get_closest_node(loc_b_coord)
+        start_node = grid_map.get_closest_node(*loc_a_coord)
+        end_node = grid_map.get_closest_node(*loc_b_coord)
 
         
         queue = []
@@ -518,29 +518,46 @@ class Pathing:
         previous_nodes = {node: None for node in grid_map.nodes.values()}
         distances[start_node] = 0
 
-        while queue:
-            current_distance, current_node = heapq.heappop(queue)
+        output_directory = r"E:/Programming in Python/applications/Thesis/ISROS/routing/data/path_classification"
+        os.makedirs(output_directory, exist_ok=True)
+        file_path = os.path.join(output_directory, f"path_classification_{loc_a_name}_to_{loc_b_name}.txt")
 
-            if current_node == end_node:
-                break
-            for neighbor in current_node.neighbors:
-                if grid_map.is_land_node(neighbor) or grid_map.is_coastal_node(neighbor):
-                    continue
-                
-                distance = current_distance + grid_map.calculate_distance(current_node, neighbor)
+        with open(file_path, "w") as file:
+            while queue:
+                current_distance, current_node = heapq.heappop(queue)
 
-                if distance < distances[neighbor]:
-                    distances[neighbor] = distance
-                    previous_nodes[neighbor] = current_node
-                    heapq.heappush(queue, (distance, neighbor))
+                #DEBUGGING------------------------------------------------------------------------------------------------------
+                if grid_map.is_land_node(current_node):
+                    file.write(f"Node {current_node.id} is land\n")
+                elif grid_map.is_coastal_node(current_node):
+                    file.write(f"Node {current_node.id} is coastal\n")
+                else:
+                    file.write(f"Node {current_node.id} is ocean\n")
 
-        #reconstruct the path
-        path = []
-        current_node = end_node
-        while current_node:
-            path.insert(0, current_node)
-            current_node = previous_nodes[current_node]
-        
+                if current_node == end_node:
+                    break
+                for neighbor in current_node.neighbors:
+                    if grid_map.is_land_node(neighbor) or grid_map.is_coastal_node(neighbor):
+                        continue
+                    
+                    distance = current_distance + grid_map.calculate_distance(current_node, neighbor)
+
+                    if distance < distances[neighbor]:
+                        distances[neighbor] = distance
+                        previous_nodes[neighbor] = current_node
+                        heapq.heappush(queue, (distance, neighbor))
+
+            #reconstruct the path
+            path = []
+            current_node = end_node
+            while current_node:
+                path.insert(0, current_node)
+                current_node = previous_nodes[current_node]
+
+            file.write("Path from start to end:\n")
+            for node in path:
+                file.write(f"{node.id}\n")
+            
         return path if path and path[0] == start_node else []
     
     def visibility_graph():
