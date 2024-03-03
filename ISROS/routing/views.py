@@ -137,7 +137,7 @@ def simulate(request):
     grid_size = 1
 
     #initialize resolution
-    grid_map = GridMap()
+    grid_map = GridMap(min_lat, max_lat, min_lon, max_lon, grid_size)
 
     #add the edges between the nodes
     grid_map.add_edges()
@@ -200,8 +200,9 @@ def simulate(request):
     '''
     try:
         pathing_instance = Pathing(grid_map)
-        dijkstra_path = pathing_instance.dijkstra2(request, grid_map)
-        folium.PolyLine(dijkstra_path, color="green", weight=2, opacity=1).add_to(m)
+        dijkstra_path = pathing_instance.dijkstra(request, grid_map)
+        dijkstra_path_coords = [(node.lat, node.lon) for node in dijkstra_path]
+        folium.PolyLine(dijkstra_path_coords, color="green", weight=2, opacity=1).add_to(m)
     except ValueError as e:
         print(f"Error in Dijkstra's algorithm: {e}")
     except TypeError as e:

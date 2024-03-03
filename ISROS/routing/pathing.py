@@ -27,6 +27,7 @@ class Node:
         self.lat = float(lat) if lat is not None else None
         self.lon = float(lon) if lon is not None else None
         self.neighbors = []
+        self.distances = {}
 
     def __lt__(self, other):
         return self.id < other.id
@@ -41,6 +42,11 @@ class Node:
     
     def is_valid(self):
         return self.lat is not None and self.lon is not None and -90 <= self.lat <= 90 and -180 <= self.lon <= 180
+    
+    def add_neighbor(self, neighbor, distance):
+        self.neighbors.append(neighbor)
+        self.distances[neighbor] = distance
+
     end_time = time.time()
     comp_time = end_time - start_time
     print(f"Nodes: {comp_time}")
@@ -53,6 +59,7 @@ handles wrapping of the map so the eastern most and western most edges connect.
 
 class GridMap:
     start_time = time.time()
+
     #current method will test for the 1° x 1° grid
     def __init__(self, resolution=1.0):
         self.resolution = resolution
@@ -100,8 +107,29 @@ class GridMap:
                 neighbor = self.nodes.get((neighbor_lat, neighbor_lon))
 
                 if neighbor:
-                    node.neighbors.append(neighbor)
+                    distance = self.calculate_distance(node, neighbor)
+                    node.add_neighbor(neighbor, distance)
 
+    @staticmethod
+    def calculate_distance(node1, node2):
+
+        R = 6371.0
+
+        lat1 = radians(node1.lat)
+        lon1 = radians(node1.lon)
+        lat2 = radians(node2.lat)
+        lon2 = radians(node2.lon)
+
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2*asin(sqrt(a))
+
+        distance = R*c
+
+        return distance
+    
     def get_node(self, lat, lon):
         
         grid_lat = float(round(lat/self.resolution) * self.resolution)
@@ -232,26 +260,6 @@ class Pathing:
         connected_coastline.append(coastline_nodes[-1])
 
         return connected_coastline
-    
-    @staticmethod
-    def calculate_distance(node1, node2):
-
-        R = 6371.0
-
-        lat1 = radians(node1.lat)
-        lon1 = radians(node1.lon)
-        lat2 = radians(node2.lat)
-        lon2 = radians(node2.lon)
-
-        dlat = lat2 - lat1
-        dlon = lon2 - lon1
-
-        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-        c = 2*asin(sqrt(a))
-
-        distance = R*c
-
-        return distance
     
     def is_near_coast(point, coast_lines, threshold):
         shapely_point = Point(point[1], point[0])
@@ -471,95 +479,8 @@ class Pathing:
         except KeyError as e:
             print(f"Key error encountered: {e}")
             print(f"Current state of open_set_tracker: {open_set_tracker}")
-
-    def dijkstra1(self, request, grid_map):
-
-        coastline_data = Pathing.is_coast()
-        max_gap_distance = 0.5
-        connected_coastline = Pathing.connect_coastline_gaps(coastline_data, max_gap_distance)
-        grid_map.init_coastline(coastline_data)
         
-
-        loc_a_name = request.POST.get("locationA")
-        loc_b_name = request.POST.get("locationB")
-        
-        ports = parse_ports() 
-        
-        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
-        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
-        
-        if loc_a is None or loc_b is None:
-            raise ValueError("One or both locations not found.")
-        
-        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
-        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
-        
-        # Convert coordinates to nodes
-        start_node = grid_map.get_node(*loc_a_coord)
-        end_node = grid_map.get_node(*loc_b_coord)
-        
-        # Initialize distances and previous nodes
-        distances = {node: float('infinity') for node in grid_map.nodes.values()}
-        previous_nodes = {node: None for node in grid_map.nodes.values()}
-        distances[start_node] = 0
-        
-        # Initialize priority queue and add the start node
-        pq = [(0, start_node.id, start_node)]
-        
-        '''For Option 2 in integrating the land shapefile
-        while pq:
-        current_distance, node_id, current_node = heapq.heappop(pq)
-
-        if current_node == end_node:
-            break  # We found the shortest path to the end node
-
-        for neighbor in current_node.neighbors:
-            # Check if the neighbor is on land
-            if GridMap.is_land(neighbor.lat, neighbor.lon):
-                continue  # Skip the neighbor if it's on land
-
-            # Calculate the distance to the neighbor
-            distance = GridMap.calculate_distance(current_node, neighbor)
-            new_distance = current_distance + distance
-
-            if new_distance < distances[neighbor]:
-                distances[neighbor] = new_distance
-                previous_nodes[neighbor] = current_node
-                heapq.heappush(pq, (new_distance, neighbor.id, neighbor))
-        '''
-        
-        while pq:
-            current_distance, node_id, current_node = heapq.heappop(pq)
-            if current_node == end_node:
-                break  # We found the shortest path to the end node
-            
-            for neighbor in current_node.neighbors:
-                # Check if the neighbor is a coastline or near a coastline
-                if grid_map.is_coastal_node(neighbor):
-                    continue  # Skip the neighbor if it's not passable
-                
-                # Calculate the distance to the neighbor
-                distance = great_circle((current_node.lat, current_node.lon), (neighbor.lat, neighbor.lon)).kilometers
-                new_distance = current_distance + distance
-                
-                if new_distance < distances[neighbor]:
-                    distances[neighbor] = new_distance
-                    previous_nodes[neighbor] = current_node
-                    heapq.heappush(pq, (new_distance, neighbor.id, neighbor))
-        
-        # Reconstruct the path from end_node to start_node
-        path = []
-        current = end_node
-        while current is not None:
-            path.insert(0, current)
-            current = previous_nodes[current]
-        
-        # Convert nodes back to coordinates for the output path
-        path_coordinates = [(node.lat, node.lon) for node in path]
-        
-        return path_coordinates
-        
-    def dijkstra2(self, request, grid_map):
+    def dijkstra(self, request, grid_map):
 
         land_data = grid_map.land_nodes()
         grid_map.init_land(land_data)
@@ -583,53 +504,40 @@ class Pathing:
         loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
         loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
         
-        # Convert coordinates to nodes
-        start_node = grid_map.get_node(*loc_a_coord)
-        end_node = grid_map.get_node(*loc_b_coord)
+        start_node = grid_map.get_closest_node(loc_a_coord)
+        end_node = grid_map.get_closest_node(loc_b_coord)
+
         
-        # Initialize distances and previous nodes
-        distances = {node: float('infinity') for node in grid_map.nodes.values()}
+        queue = []
+        heapq.heappush(queue, (0, start_node))
+        distances = {node: float("infinity") for node in grid_map.nodes.values()}
         previous_nodes = {node: None for node in grid_map.nodes.values()}
         distances[start_node] = 0
-        
-        # Initialize priority queue and add the start node
-        pq = [(0, start_node.id, start_node)]
 
-        while pq:
-            current_distance, node_id, current_node = heapq.heappop(pq)
-            print(f"Processing node {node_id} at ({current_node.lat}, {current_node.lon}) with current distance {current_distance}")
-
-            if Pathing.is_land(current_node.lat, current_node.lon):
-                print(f"Node {node_id} is on land. Skipping.")
-                continue
+        while queue:
+            current_distance, current_node = heapq.heappop(queue)
 
             if current_node == end_node:
                 break
-
             for neighbor in current_node.neighbors:
-                if grid_map.is_land_node(neighbor):
-                    print(f"Neighbor node {neighbor.id} at ({neighbor.lat}, {neighbor.lon}) is on land. Skipping.")
+                if grid_map.is_land_node(neighbor) or grid_map.is_coastal_node(neighbor):
                     continue
+                
+                distance = current_distance + grid_map.calculate_distance(current_node, neighbor)
 
-                distance = Pathing.calculate_distance(current_node, neighbor)
-                new_distance = current_distance + distance
-
-                if new_distance < distances[neighbor]:
-                    distances[neighbor] = new_distance
+                if distance < distances[neighbor]:
+                    distances[neighbor] = distance
                     previous_nodes[neighbor] = current_node
-                    heapq.heappush(pq, (new_distance, neighbor.id, neighbor))
+                    heapq.heappush(queue, (distance, neighbor))
 
-        # Reconstruct the path from end_node to start_node
+        #reconstruct the path
         path = []
-        current = end_node
-        while current is not None:
-            path.insert(0, current)
-            current = previous_nodes[current]
+        current_node = end_node
+        while current_node:
+            path.insert(0, current_node)
+            current_node = previous_nodes[current_node]
         
-        # Convert nodes back to coordinates for the output path
-        path_coordinates = [(node.lat, node.lon) for node in path]
-        
-        return path_coordinates
+        return path if path and path[0] == start_node else []
     
     def visibility_graph():
         pass
