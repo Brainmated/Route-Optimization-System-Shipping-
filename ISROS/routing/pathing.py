@@ -61,7 +61,11 @@ class GridMap:
     start_time = time.time()
 
     #current method will test for the 1° x 1° grid
-    def __init__(self, resolution=1.0):
+    def __init__(self, min_lat=-90, max_lat=90, min_lon=-180, max_lon=180, resolution=1.0):
+        self.min_lat = min_lat
+        self.max_lat = max_lat
+        self.min_lon = min_lon
+        self.max_lon = max_lon
         self.resolution = resolution
         self.nodes = self.create_nodes()
         self.coastal_nodes = self.coastal_nodes()
@@ -72,8 +76,8 @@ class GridMap:
         #set nodes as a dictionary and set attributes
         nodes = {}
         node_id = 0
-        for lat in np.arange(-90, 90, self.resolution):
-            for lon in np.arange(-180, 180, self.resolution):
+        for lat in np.arange(self.min_lat, self.max_lat, self.resolution):
+            for lon in np.arange(self.min_lon, self.max_lon, self.resolution):
                 nodes[(float(lat), float(lon))] = Node(node_id, lat, lon)
                 node_id += 1
         return nodes
@@ -203,7 +207,7 @@ class Pathing:
         self.grid_map = grid_map
 
     @staticmethod
-    def is_land(lat, lon):
+    def is_land():
         land_areas = []
         node_id = 0
         for _, row in Pathing.land.iterrows():
