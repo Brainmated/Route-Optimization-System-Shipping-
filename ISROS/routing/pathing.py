@@ -236,7 +236,7 @@ class Pathing:
                 node_id +=len(row["geometry"].coords)
 
             elif isinstance(row["geometry"], MultiLineString):
-                for line in row["geometry"]:
+                for line in row["geometry"].geoms:
                     coastline += [Node(node_id,y,x) for x, y in line.coords]
                     node_id +=len(line.coords)
         return coastline
