@@ -130,7 +130,7 @@ class GridMap:
 
         return distance
     
-    def get_node(self, lat, lon):
+    def get_closest_node(self, lat, lon):
         
         grid_lat = float(round(lat/self.resolution) * self.resolution)
         grid_lon = float(round(lon/self.resolution) * self.resolution)
