@@ -16,8 +16,11 @@ from .ports import parse_ports
 from django.contrib import messages
 from geopy.distance import great_circle
 from shapely.geometry import Point, Polygon, MultiPolygon
+import time
+
 
 class Node:
+    start_time = time.time()
 
     def __init__(self, id, lat, lon):
         self.id = id
@@ -25,7 +28,6 @@ class Node:
         self.lon = float(lon) if lon is not None else None
         self.neighbors = []
         self.distances = {}
-        self.type = None #land, water and coast
 
     def __lt__(self, other):
         return self.id < other.id
@@ -44,6 +46,10 @@ class Node:
     def add_neighbor(self, neighbor, distance):
         self.neighbors.append(neighbor)
         self.distances[neighbor] = distance
+
+    end_time = time.time()
+    comp_time = end_time - start_time
+    print(f"Nodes: {comp_time}")
 '''
 The GridMap class creates a node for every integer latitude/longitude
 intersection and then adds edges to each node's neighbors.
@@ -52,6 +58,7 @@ handles wrapping of the map so the eastern most and western most edges connect.
 '''
 
 class GridMap:
+    start_time = time.time()
 
     #current method will test for the 1° x 1° grid
     def __init__(self, min_lat=-90, max_lat=90, min_lon=-180, max_lon=180, resolution=1.0):
@@ -81,14 +88,11 @@ class GridMap:
         #8 directions for the 8 edges of every node to move on
         directions = [
             (-1, 1), (-1, 0), (-1, 1), #Southwest | South |Southeast
-            (0, -1),            (0, 1),  #West | Node | East
+            (0, 1),            (0, 1),  #West | Node | East
             (1, -1), (1, 0), (1, 1),  #Northwest | North | Northeast
         ]
 
         for (lat, lon), node in self.nodes.items():
-            if node.type in ["land", "coast"]:
-                continue
-
             for d_lat, d_lon in directions:
                 neighbor_lat = lat + d_lat * self.resolution
                 neighbor_lon = lon + d_lon * self.resolution
@@ -153,18 +157,7 @@ class GridMap:
         return land_nodes
     
     def init_land(self, land_data):
-        for node in land_data:
-            if node.is_valid():
-                # Wrap the longitude if necessary
-                wrapped_lon = node.lon % 360
-                if wrapped_lon > 180:
-                    wrapped_lon -= 360
-                # Ensure the key exists
-                key = (node.lat, wrapped_lon)
-                if key in self.nodes:
-                    self.nodes[key].type = "land"
-                else:
-                    print(f"Key {key} not found in nodes")
+        self.land_nodes = set(land_data)
 
     def is_land_node(self, node):
         return node in self.land_nodes
@@ -180,21 +173,14 @@ class GridMap:
         return coastal_nodes
     
     def init_coastline(self, coastline_data):
-        for node in coastline_data:
-            if node.is_valid():
-                # Wrap the longitude if necessary
-                wrapped_lon = node.lon % 360
-                if wrapped_lon > 180:
-                    wrapped_lon -= 360
-                # Ensure the key exists
-                key = (node.lat, wrapped_lon)
-                if key in self.nodes:
-                    self.nodes[key].type = "coast"
-                else:
-                    print(f"Key {key} not found in nodes")
+        self.coastal_nodes = set(coastline_data)
     
     def is_coastal_node(self, node):
         return node in self.coastal_nodes
+    
+    end_time = time.time()
+    comp_time = end_time - start_time
+    print(f"Grid Map: {comp_time}")
 
 '''
 class Map_Marking:
@@ -211,7 +197,7 @@ class Map_Marking:
 '''
 
 class Pathing:
-
+    start_time = time.time()
     script_dir = os.path.dirname(os.path.abspath(__file__))
     land = gpd.read_file("routing/data/geopackages/ne_10m_land.gpkg")
     coastline = gpd.read_file("routing/data/geopackages/ne_10m_coastline.gpkg")
@@ -576,3 +562,7 @@ class Pathing:
     
     def visibility_graph():
         pass
+
+    end_time = time.time()
+    comp_time = end_time - start_time
+    print(f"Pathing: {comp_time}")
