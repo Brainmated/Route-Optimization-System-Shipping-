@@ -349,142 +349,52 @@ class Pathing:
             raise ValueError(f"Latitude {lat} is out of bounds. Must be between -90 and 90.")
         if not -180 <= lon <= 180:
             raise ValueError(f"Longitude {lon} is out of bounds. Must be between -180 and 180.")
-        
-
-    def a_star(request, grid_map):
-        try:
-            loc_a_name = request.POST.get("locationA")
-            loc_b_name = request.POST.get("locationB")
-            ports = parse_ports()
-
-            start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
-            print(f"start_coords = {start_coords}")
-            goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
-            print(f"goald_coords = {goal_coords}")
-            
-            start = grid_map.get_node(float(start_coords["latitude"]), float(start_coords["longitude"]))
-            print(f"Initial node set, {start}")
-            goal = grid_map.get_node(float(goal_coords["latitude"]), float(goal_coords["longitude"]))
-            print(f"End node set, {goal}")
-
-            if start is None or goal is None:
-                messages.error(request, "One or both locations not found.")
-                return None
-            
-            if not start.is_valid or not goal.is_valid:
-                raise ValueError("One or more nodes are invalid.")
-            
-            
-            #DEBUG------------------------------------------------------------------
-            print(f"Debugging: Start Node: {start}, Goal Node: {goal}")
-            
-            #implement Heuristics
-            def haversine(lat1, lon1, lat2, lon2):
-                #convert decimal degrees to radians
-                lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-
-                #Haversine formula
-                dlat = lat2 - lat1
-                dlon = lon2 - lon1
-                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-                c = 2 * asin(sqrt(a))
-                #earth radius in kilometers
-                km = 6371 * c
-                return km
-            
-            #open and closed sets 
-            #open sets contain nodes that have been discovered but not evaluated
-            open_set = []
-            open_set_tracker = set()
-            heapq.heappush(open_set, (0, start))
-            open_set_tracker.add(start)
-            #DEBUG--------------------------------------------------------------------
-            print(f"Open set tracker before removing the current node: {open_set_tracker}")
-            #closed sets contain nodes that have been evaluated
-            closed_set = set()
-
-            #distance and movement cost from initial/start state to current node
-            g_score = {node: float("inf") for node in grid_map.nodes.values()}
-            g_score[start] = 0 #the initial state, position 0
-
-            #estimated movement cost from current node to end/goal node
-            f_score = {node: float("inf") for node in grid_map.nodes.values()}
-            f_score[start] = haversine(start.lat, start.lon, goal.lat, goal.lon)
-            #DEBUG-------------------------------------------------------------------------------
-            print(f"Debugging: Initial heuristic value: {f_score[start]}")
-            #path reconstruction
-            came_from = {}
-
-            coast_lines = Pathing.is_coast()
-
-            #threshold of at least 10 km away from the coast
-            threshold = 10
-
-            def reconstruct_path(came_from, current):
-                path = []
-                while current in came_from:
-                    path.append(current)
-                    current = came_from[current]
-                path.append(current)
-                path.reverse()
-                return path
     
-            while open_set:
+    def heuristic(node1, node2):
+        return great_circle((node1.lat, node1.on), (node2.lat, node2.lon)).km
 
-                #search for node in open set with the lowest f_score value
-                current = heapq.heappop(open_set)[1]
-                open_set_tracker.remove(current)
-                #DEBUG-----------------------------------------------------------------
-                print(f"Debugging: Current Node: {current}") 
+    def a_star(self, start_node, end_node):
+        visited = set()
+        open_set = []
+        heapq.heappush(open_set, (0, start_node))
 
-                if current == goal:
-                    print("Debugg: Goal reached, reconstructing path.")
-                    return reconstruct_path(came_from, current)
-                
-                closed_set.add(current)
+        came_from = {}
+        g_score = {node: float("infinity") for node in self.nodes.values()}
+        g_score[start_node] = 0
 
-                for neighbor in current.neighbors:
-                    #DEBUG-----------------------------------------------------------------
-                    print(f"Debugging: Evaluating neighbor: {neighbor}")
-                    if Pathing.is_near_coast((neighbor.lat, neighbor.lon), coast_lines, threshold):
-                        #DEBUG----------------------------------------------------------------------
-                        print(f"Debugging: Neighbor {neighbor} is near coast and will be skipped.")
-                        continue
-                    
-                    if neighbor in closed_set:
-                        #ignore evaluated neighbors and continue
-                        continue
+        f_score = {node: float("infinity") for node in self.nodes.values()}
+        f_score[start_node] = self.heuristic(start_node, end_node)
 
-                    #hesitant approach
-                    tentative_g_score = g_score[current] + haversine(current.lat, current.lon, neighbor.lat, neighbor.lon)
-                    #DEBUG-----------------------------------------------------------------------------
-                    print(f"Debugging: Tentative G Score for {neighbor}: {tentative_g_score}")
+        while open_set:
+            current = heapq.heappop(open_set[1])
 
-                    if tentative_g_score < g_score[neighbor]:
-                        came_from[neighbor] = current
-                        g_score[neighbor] = tentative_g_score
-                        f_score[neighbor] = tentative_g_score + haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
+            if current == end_node:
+                return self.reconstruct_path(came_from, current)
+            visited.add(current)
 
-                        # Add the neighbor to the open set if it's not there already
-                        if neighbor not in open_set_tracker:
-                            heapq.heappush(open_set, (f_score[neighbor], neighbor))
-                            open_set_tracker.add(neighbor)
-                    
-                    #when a node is popped from the open set, then remove it from the tracker
-                    open_set_tracker.remove(current)
-                    
-                    #BEST PATH
+            for neighbor in current.neighbors:
+                if neighbor in visited:
+                    continue
+
+                tentative_g_score = g_score[current] + current.distance[neighbor]
+
+                if tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score +haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
+                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, end_node)
 
-            #the optimal path isnt found
-            return None
-        except KeyError as e:
-            print(f"Key error encountered: {e}")
-            print(f"Current state of open_set_tracker: {open_set_tracker}")
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+        #in case of no path      
+        return None
+    
+    def reconstruct_path(self, came_from, current):
+        total_path = [current]
+        while current in came_from:
+            current = came_from[current]
+            total_path.insert(0, current)
+        return total_path
         
-    def dijkstra(self, request, grid_map):
+    def dijkstra(self, start_node, end_node):
 
         land_data = grid_map.land_nodes()
         grid_map.init_land(land_data)
@@ -492,26 +402,7 @@ class Pathing:
         max_gap_distance = 0.5
         connected_coastline = Pathing.connect_coastline_gaps(coastline_data, max_gap_distance)
         grid_map.init_coastline(coastline_data)
-        
 
-        loc_a_name = request.POST.get("locationA")
-        loc_b_name = request.POST.get("locationB")
-        
-        ports = parse_ports() 
-        
-        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
-        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
-        
-        if loc_a is None or loc_b is None:
-            raise ValueError("One or both locations not found.")
-        
-        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
-        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
-        
-        start_node = grid_map.get_closest_node(*loc_a_coord)
-        end_node = grid_map.get_closest_node(*loc_b_coord)
-
-        
         queue = []
         heapq.heappush(queue, (0, start_node))
         distances = {node: float("infinity") for node in grid_map.nodes.values()}

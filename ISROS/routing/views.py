@@ -129,6 +129,28 @@ def debug_view(request):
 
     return render(request, 'debug.html', context)
 
+def route_request(request):
+
+    if request.method == "POST":
+        loc_a_name = request.POST.get("locationA")
+        loc_b_name = request.POST.get("locationB")
+        
+        ports = parse_ports() 
+        
+        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
+        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
+        
+        if loc_a is None or loc_b is None:
+            raise ValueError("One or both locations not found.")
+        
+        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
+        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
+
+        grid_map = GridMap()
+        
+        start_node = grid_map.get_closest_node(*loc_a_coord)
+        end_node = grid_map.get_closest_node(*loc_b_coord)
+        
 @require_http_methods(["POST"])
 def simulate(request):
 
