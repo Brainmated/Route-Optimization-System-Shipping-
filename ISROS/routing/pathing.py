@@ -16,11 +16,9 @@ from .ports import parse_ports
 from django.contrib import messages
 from geopy.distance import great_circle
 from shapely.geometry import Point, Polygon, MultiPolygon
-import time
 
 
 class Node:
-    start_time = time.time()
 
     def __init__(self, id, lat, lon):
         self.id = id
@@ -47,9 +45,6 @@ class Node:
         self.neighbors.append(neighbor)
         self.distances[neighbor] = distance
 
-    end_time = time.time()
-    comp_time = end_time - start_time
-    print(f"Nodes: {comp_time}")
 '''
 The GridMap class creates a node for every integer latitude/longitude
 intersection and then adds edges to each node's neighbors.
@@ -58,10 +53,9 @@ handles wrapping of the map so the eastern most and western most edges connect.
 '''
 
 class GridMap:
-    start_time = time.time()
 
     #current method will test for the 1° x 1° grid
-    def __init__(self, min_lat=-90, max_lat=90, min_lon=-180, max_lon=180, resolution=1.0):
+    def __init__(self, min_lat=-90, max_lat=90, min_lon=-180, max_lon=180, resolution=0.1):
         self.min_lat = min_lat
         self.max_lat = max_lat
         self.min_lon = min_lon
@@ -177,10 +171,6 @@ class GridMap:
     
     def is_coastal_node(self, node):
         return node in self.coastal_nodes
-    
-    end_time = time.time()
-    comp_time = end_time - start_time
-    print(f"Grid Map: {comp_time}")
 
 '''
 class Map_Marking:
@@ -197,7 +187,7 @@ class Map_Marking:
 '''
 
 class Pathing:
-    start_time = time.time()
+
     script_dir = os.path.dirname(os.path.abspath(__file__))
     land = gpd.read_file("routing/data/geopackages/ne_10m_land.gpkg")
     coastline = gpd.read_file("routing/data/geopackages/ne_10m_coastline.gpkg")
@@ -562,7 +552,3 @@ class Pathing:
     
     def visibility_graph():
         pass
-
-    end_time = time.time()
-    comp_time = end_time - start_time
-    print(f"Pathing: {comp_time}")
