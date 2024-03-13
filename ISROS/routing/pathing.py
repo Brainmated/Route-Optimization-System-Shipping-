@@ -7,6 +7,7 @@ import numpy as np
 import networkx as nx
 import random
 import heapq
+import math
 from math import radians, cos, sin, asin, sqrt
 from itertools import product
 import osmnx as ox
@@ -96,7 +97,7 @@ class GridMap:
                 for neighbor_key in neighboring_keys:
                     if neighbor_key in self.grid and neighbor_key != grid_cell_key:
                         for node2 in self.grid[neighbor_key]:
-                            distance = self.haversine_distance(node1.lat, node1.lon, node2.lat, node2.lon)
+                            distance = self.calculate_distance(node1.lat, node1.lon, node2.lat, node2.lon)
 
                             if distance <= self.distance_threshold:
                                 node1.add_neighbor(node2, distance)
@@ -189,35 +190,24 @@ class Pathing:
 
         self.grid_map = grid_map
     
-    def a_star(self, request, start_node, goal_node):
+    def heuristic(self, node1, node2):
+        dx = abs(node1.x - node2.x)
+        dy = abs(node1.y - node2.y)
+        return math.sqrt(dx * dx + dy * dy)
+
+    def a_star(self, start_node, goal_node):
 
         open_set = []
         closed_set = set() #To trac ndoes already visited or in open_set
-        ports = parse_ports()
-        heapq.heappush(open_set, (0, start_node))
 
-        # Extract location A and B from the POST data
-        loc_a_name = request.POST.get("locationA")
-        loc_b_name = request.POST.get("locationB")
-        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
-        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
-        
-        if loc_a is None or loc_b is None:
-            raise ValueError("One or both locations not found.")
-        
-        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
-        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
-        
-        start_node = GridMap.get_closest_node(*loc_a_coord)
-        goal_node = GridMap.get_closest_node(*loc_b_coord)
-    
+        heapq.heappush(open_set, (0, start_node))
         came_from = {start_node: None}
 
         #Cost from start to a node
         g_score = {start_node: 0}
 
         #Estimated cost from start to goal through a node
-        f_score = {start_node: self.grid_map.heuristic(start_node, goal_node)}
+        f_score = {start_node: self.heuristic(start_node, goal_node)}
 
         while open_set:
             current = heapq.heappop(open_set)[1]

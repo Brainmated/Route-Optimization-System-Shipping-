@@ -135,12 +135,7 @@ def simulate(request):
     min_lat, max_lat = -90, 90 
     min_lon, max_lon = -180, 180 
     grid_size = 1
-
-    #initialize resolution
-    grid_map = GridMap(min_lat, max_lat, min_lon, max_lon, grid_size)
-
-    #add the edges between the nodes
-    grid_map.add_edges()
+    grid_map = GridMap(distance_threshold=5) #test with 5 km
 
     m = folium.Map(
     location=[0, 0],
@@ -162,6 +157,20 @@ def simulate(request):
 
     #obtaining the straight_path
     m, formatted_distance = Pathing.straight_path(request, m)
+
+    # Extract location A and B from the POST data
+    loc_a_name = request.POST.get("locationA")
+    loc_b_name = request.POST.get("locationB")
+    
+    ports = parse_ports()
+    loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
+    loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
+    
+    if loc_a is None or loc_b is None:
+        return JsonResponse({"error": "One or both locations not found."}, status=400)
+
+    start_node = grid_map.get_closest_node(float(loc_a['latitude']), float(loc_a['longitude']))
+    goal_node = grid_map.get_closest_node(float(loc_b['latitude']), float(loc_b['longitude']))
 
     #obtaining the a_star path -------------------------------------------------------------------------------------------------------FIX
     #result = Pathing.a_star(request, grid_map)
@@ -197,20 +206,23 @@ def simulate(request):
             fill_color='red',
             fill_opacity=1.0
         ).add_to(m)
-    '''
+    ''' 
+
+    pathing_instance = Pathing(grid_map)
     try:
-        pathing_instance = Pathing(grid_map)
-        dijkstra_path = pathing_instance.dijkstra(request, grid_map)
-        dijkstra_path_coords = [(node.lat, node.lon) for node in dijkstra_path]
-        folium.PolyLine(dijkstra_path_coords, color="green", weight=2, opacity=1).add_to(m)
+        a_star_path = pathing_instance.a_star(start_node, goal_node)
+
+
+        if a_star_path:
+            #Extract coordinates
+            a_star_path_coords = [(node.lat, node.lon) for node in a_star_path]
+            #Draw the path with folium
+            folium.PolyLine(a_star_path_coords, color="green", weight=2, opacity=1).add_to(m)
+        else:
+            print("No path found using A* algorithm")
     except ValueError as e:
-        print(f"Error in Dijkstra's algorithm: {e}")
-    except TypeError as e:
-        print(f"Type Error in Dijkstra's algorithm: {e}")
+        print(f"Error with A* algorithm: {e}")
 
-
-
-        
     # Serialize the map to HTML
     map_html = m._repr_html_()
 
