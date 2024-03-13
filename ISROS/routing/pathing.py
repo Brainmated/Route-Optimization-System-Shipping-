@@ -109,7 +109,7 @@ class GridMap:
     def is_land():
         land_areas = []
         node_id = 0
-        for _, row in Pathing.land.iterrows():
+        for _, row in GridMap.land.iterrows():
             geometry = row["geometry"]
             if isinstance(geometry, Polygon):
                 land_areas += [Node(node_id, *coords) for coords in geometry.exterior.coords]
@@ -129,7 +129,7 @@ class GridMap:
     def is_coast():
         coastline = []
         node_id = 0
-        for _, row in Pathing.coastline.iterrows():
+        for _, row in GridMap.coastline.iterrows():
             if isinstance(row["geometry"], LineString):
                 coastline += [Node(node_id,y,x) for x, y in row["geometry"].coords]
                 node_id +=len(row["geometry"].coords)
@@ -143,20 +143,20 @@ class GridMap:
     def get_closest_node(self, lat, lon):
         closest_node = None
         min_distance = float("inf")
-        for node in self.nodes.values():
-            distance = self.calcualte_distance(node, lat, lon)
+        for node in self.nodes:
+            distance = self.calculate_distance(node, lat, lon)
 
             if distance < min_distance:
                 min_distance = distance
                 closest_node = node
         return closest_node
 
-    def calcualte_distance(node, lat2, lon2):
+    def calculate_distance(self, node, lat2, lon2):
 
         R = 6361.0 #Earth radius in kilometers
 
         #Convert latitude and longitude from degrees to radians
-        lat1, lon1 = map(radians, [node.latitude, node.longitude])
+        lat1, lon1 = map(radians, [node.lat, node.lon])
         lat2, lon2 = map(radians, [lat2, lon2])
 
         #Haversine formula
@@ -216,7 +216,7 @@ class Pathing:
         g_score = {start_node: 0}
 
         #Estimated cost from start to goal through a node
-        f_score = {start_node: self.heuristic(start_node, goal_node)}
+        f_score = {start_node: self.grid_map.heuristic(start_node, goal_node)}
 
         while open_set:
             current = heapq.heappop(open_set)[1]
@@ -244,7 +244,7 @@ class Pathing:
         while current:
             path.append(current)
             current = came_from[current]
-        path.revers() #Reverse the path from start to goal
+        path.reverse() #Reverse the path from start to goal
         return path
     
     @staticmethod
