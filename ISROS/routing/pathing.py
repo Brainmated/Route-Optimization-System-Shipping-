@@ -192,6 +192,7 @@ class Pathing:
     def a_star(self, request, start_node, goal_node):
 
         open_set = []
+        closed_set = set() #To trac ndoes already visited or in open_set
         ports = parse_ports()
         heapq.heappush(open_set, (0, start_node))
 
@@ -207,8 +208,8 @@ class Pathing:
         loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
         loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
         
-        start_node = grid_map.get_closest_node(*loc_a_coord)
-        goal_node = grid_map.get_closest_node(*loc_b_coord)
+        start_node = GridMap.get_closest_node(*loc_a_coord)
+        goal_node = GridMap.get_closest_node(*loc_b_coord)
     
         came_from = {start_node: None}
 
@@ -221,18 +222,29 @@ class Pathing:
         while open_set:
             current = heapq.heappop(open_set)[1]
 
+            if current in closed_set:
+                continue #Skip processing this node if its already been visited
+
             if current == goal_node:
                 return self.reconstruct_path(came_from, current)
             
+            closed_set.add(current) #Add the current node to the closed_set
+
             for neighbor, distance in current.neighbors.items():
+                if neighbor in closed_set:
+                    continue #ignore the neighbor which is already evaluated
+
                 tentative_g_score = g_score[current] + distance
             
-            if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
-                came_from[neighbor] = current
-                g_score[neighbor] = tentative_g_score
-                f_score[neighbor] = tentative_g_score + self,heuristic(neighbor, goal_node)
+                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal_node)
 
-                heapq.heappush(open_set, (f-f_score[neighbor], neighbor))
+                    #Only push the neighbor to the heap if its not there already
+                    if neighbor not in open_set:
+                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                    
 
         #Return failure if there's no path
         return None
