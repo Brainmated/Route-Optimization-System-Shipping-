@@ -3,8 +3,6 @@ from folium.plugins import AntPath
 import shapely.geometry
 from shapely.geometry import Point, LineString, MultiLineString
 import os
-import sys
-import traceback
 import numpy as np
 import networkx as nx
 import random
