@@ -152,12 +152,12 @@ class GridMap:
                 closest_node = node
         return closest_node
 
-    def calculate_distance(self, node, lat2, lon2):
+    def calculate_distance(self, lat1, lon1, lat2, lon2):
 
         R = 6361.0 #Earth radius in kilometers
 
         #Convert latitude and longitude from degrees to radians
-        lat1, lon1 = map(radians, [node.lat, node.lon])
+        lat1, lon1 = map(radians, [lat1, lon1])
         lat2, lon2 = map(radians, [lat2, lon2])
 
         #Haversine formula
