@@ -8,6 +8,7 @@ import networkx as nx
 import random
 import heapq
 from math import radians, cos, sin, asin, sqrt
+from itertools import product
 import osmnx as ox
 import geopandas as gpd
 from .ports import parse_ports
@@ -52,148 +53,58 @@ handles wrapping of the map so the eastern most and western most edges connect.
 
 class GridMap:
 
-    #current method will test for the 1° x 1° grid
-    def __init__(self, min_lat=-90, max_lat=90, min_lon=-180, max_lon=180, resolution=0.1):
-        self.min_lat = min_lat
-        self.max_lat = max_lat
-        self.min_lon = min_lon
-        self.max_lon = max_lon
-        self.resolution = resolution
-        self.nodes = self.create_nodes()
-        self.coastal_nodes = self.coastal_nodes()
-        self.add_edges()
-
-    #method that creates nodes on the grid to help map the cells
-    def create_nodes(self):
-        #set nodes as a dictionary and set attributes
-        nodes = {}
-        node_id = 0
-        for lat in np.arange(self.min_lat, self.max_lat, self.resolution):
-            for lon in np.arange(self.min_lon, self.max_lon, self.resolution):
-                nodes[(float(lat), float(lon))] = Node(node_id, lat, lon)
-                node_id += 1
-        return nodes
-    
-
-    def add_edges(self):
-
-        #8 directions for the 8 edges of every node to move on
-        directions = [
-            (-1, 1), (-1, 0), (-1, 1), #Southwest | South |Southeast
-            (0, 1),            (0, 1),  #West | Node | East
-            (1, -1), (1, 0), (1, 1),  #Northwest | North | Northeast
-        ]
-
-        for (lat, lon), node in self.nodes.items():
-            for d_lat, d_lon in directions:
-                neighbor_lat = lat + d_lat * self.resolution
-                neighbor_lon = lon + d_lon * self.resolution
-
-                #degree wrapping for longitude
-                if neighbor_lon < -180:
-                    neighbor_lon += 360
-                elif neighbor_lon > 180:
-                    neighbor_lon -= 360
-
-                #degree wrapping for latitude
-                if neighbor_lat < -90 or neighbor_lat > 90:
-                    #just skip creating more edges that go beyond the two poles
-                    continue
-
-                neighbor = self.nodes.get((neighbor_lat, neighbor_lon))
-
-                if neighbor:
-                    distance = self.calculate_distance(node, neighbor)
-                    node.add_neighbor(neighbor, distance)
-
-    @staticmethod
-    def calculate_distance(node1, node2):
-
-        R = 6371.0
-
-        lat1 = radians(node1.lat)
-        lon1 = radians(node1.lon)
-        lat2 = radians(node2.lat)
-        lon2 = radians(node2.lon)
-
-        dlat = lat2 - lat1
-        dlon = lon2 - lon1
-
-        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-        c = 2*asin(sqrt(a))
-
-        distance = R*c
-
-        return distance
-    
-    def get_closest_node(self, lat, lon):
-        
-        grid_lat = float(round(lat/self.resolution) * self.resolution)
-        grid_lon = float(round(lon/self.resolution) * self.resolution)
-
-        #wrap longitude if necessary
-        if grid_lon <= -180:
-            grid_lon += 360
-        elif grid_lon > 180:
-            grid_lon -= 360
-        return self.nodes.get((grid_lat, grid_lon))
-    
-    def land_nodes(self):
-        land_nodes = set()
-        land_areas = Pathing.is_land()
-
-        for node in land_areas:
-            if node.is_valid():
-                land_nodes.add(node)
-
-        return land_nodes
-    
-    def init_land(self, land_data):
-        self.land_nodes = set(land_data)
-
-    def is_land_node(self, node):
-        return node in self.land_nodes
-    
-    def coastal_nodes(self):
-        coastal_nodes = set()
-        coastline_nodes = Pathing.is_coast()
-
-        for node in coastline_nodes:
-            if node.is_valid():
-                coastal_nodes.add(node)
-        
-        return coastal_nodes
-    
-    def init_coastline(self, coastline_data):
-        self.coastal_nodes = set(coastline_data)
-    
-    def is_coastal_node(self, node):
-        return node in self.coastal_nodes
-
-'''
-class Map_Marking:
-
-    #check validity of shape files
-    def __init__(self, land_shp, water_shp):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.land_data = gpd.read_file("routing/data/ne_10m_land.shp")
-        self.coastline_data = gpd.read_file("routing/data/ne_10m_coastline.shp")
-
-
-    #---------------------------------THE SHP FILES ARE VALID----------------------------------
-    #---------------------------------CHECK WHY THE RANDOM POSITIONS ARENT THAT RANDOM---------
-'''
-
-class Pathing:
-
     script_dir = os.path.dirname(os.path.abspath(__file__))
     land = gpd.read_file("routing/data/geopackages/ne_10m_land.gpkg")
     coastline = gpd.read_file("routing/data/geopackages/ne_10m_coastline.gpkg")
 
-    def __init__(self, grid_map):
+    #current method will test for the 1° x 1° grid
+    def __init__(self, distance_threshold):
+        self.nodes = set()
+        self.land_nodes = self.is_land()
+        self.coast_nodes = self.is_coast()
+        self.distance_threshold = distance_threshold
+        self.grid = {}
+        self.create_grid()
+        self.create_edges()
 
-        self.grid_map = grid_map
+    def create_grid(self):
+        for node in self.land_nodes + self.coast_nodes:
+            #Calculate the grid cell key as a tuple (lat_index, lon_index)
+            lat_index = int(node.lat // 0.1)
+            lon_index = int(node.lon // 0.1)
+            grid_cell_key = (lat_index, lon_index)
 
+            #Add the node to the gride cell
+            if grid_cell_key not in self.grid:
+                self.grid[grid_cell_key] = []
+            self.grid[grid_cell_key].append(node)
+            self.nodes.add(node)
+
+    def create_edges(self):
+        #Iterate over the grid cells
+        for grid_cell_key in self.grid:
+            #Get the current cell and the neighboring cells keys
+            lat_index, lon_index = grid_cell_key
+            neighboring_keys = product(
+                [lat_index - 1, lat_index, lat_index +1],
+                [lon_index -1, lon_index, lon_index +1]
+            )
+
+            #Iterate over each node in the current cell
+            for node1 in self.grid[grid_cell_key]:
+                #Check nodes in neighboring cells
+                for neighbor_key in neighboring_keys:
+                    if neighbor_key in self.grid and neighbor_key != grid_cell_key:
+                        for node2 in self.grid[neighbor_key]:
+                            distance = self.haversine_distance(node1.lat, node1.lon, node2.lat, node2.lon)
+
+                            if distance <= self.distance_threshold:
+                                node1.add_neighbor(node2, distance)
+                                node2.add_neighbor(node1, distance)
+    
+    def heuristic(self, node1, node2):
+        return self.haversine_distance(node1.lat, node1.lon, node2.lat, node2.lon)
+    
     @staticmethod
     def is_land():
         land_areas = []
@@ -229,54 +140,84 @@ class Pathing:
                     node_id +=len(line.coords)
         return coastline
     
-    def connect_coastline_gaps(coastline_nodes, max_gap_distance):
 
-        connected_coastline = []
-        node_id = len(coastline_nodes)
+'''
+class Map_Marking:
 
-        for i in range(len(coastline_nodes)-1):
-            current_node = coastline_nodes[i]
-            next_node = coastline_nodes[i+1]
-            gap_distance = GridMap.calculate_distance(current_node, next_node)
+    #check validity of shape files
+    def __init__(self, land_shp, water_shp):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.land_data = gpd.read_file("routing/data/ne_10m_land.shp")
+        self.coastline_data = gpd.read_file("routing/data/ne_10m_coastline.shp")
 
-            if gap_distance > max_gap_distance:
-                new_lat = (current_node.lat + next_node.lat) / 2
-                new_lon = (current_node.lon + next_node.lon) / 2
-                new_node = Node(node_id, new_lat, new_lon)
-                connected_coastline.extend([current_node, new_node])
-                node_id += 1
 
-            else:
-                connected_coastline.append(current_node)
+    #---------------------------------THE SHP FILES ARE VALID----------------------------------
+    #---------------------------------CHECK WHY THE RANDOM POSITIONS ARENT THAT RANDOM---------
+'''
 
-        connected_coastline.append(coastline_nodes[-1])
+class Pathing:
 
-        return connected_coastline
+    def __init__(self, grid_map):
+
+        self.grid_map = grid_map
     
-    def is_near_coast(point, coast_lines, threshold):
-        shapely_point = Point(point[1], point[0])
+    def a_star(self, request, start_node, goal_node):
 
-        if not shapely_point.is_valid:
-            raise ValueError(f"Invalid point geometry: {shapely_point}")
+        open_set = []
+        ports = parse_ports()
+        heapq.heappush(open_set, (0, start_node))
+
+        # Extract location A and B from the POST data
+        loc_a_name = request.POST.get("locationA")
+        loc_b_name = request.POST.get("locationB")
+        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
+        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
         
-        for line in coast_lines:
-            shapely_line = LineString(line)
-            if not shapely_line.is_valid:
-                raise ValueError(f"Invalid line geometry: {shapely_line}")
-            
-            #rough conversion from degrees to kilometers
-            if shapely_point.distance(shapely_line) / 111.32 > threshold :
-                return True
-        return False
+        if loc_a is None or loc_b is None:
+            raise ValueError("One or both locations not found.")
+        
+        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
+        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
+        
+        start_node = grid_map.get_closest_node(*loc_a_coord)
+        goal_node = grid_map.get_closest_node(*loc_b_coord)
     
-    def near_coast_proximity(grid, coast_lines, threshold):
-        for x in range(len(grid)):
-            for y in range(len(grid[x])):
-                if Pathing.is_near_coast((x, y), coast_lines, threshold):
-                    grid[x][y].walkable = False
-        print("Found near coast proximity")
+        came_from = {start_node: None}
 
-    
+        #Cost from start to a node
+        g_score = {start_node: 0}
+
+        #Estimated cost from start to goal through a node
+        f_score = {start_node: self.heuristic(start_node, goal_node)}
+
+        while open_set:
+            current = heapq.heappop(open_set)[1]
+
+            if current == goal_node:
+                return self.reconstruct_path(came_from, current)
+            
+            for neighbor, distance in current.neighbors.items():
+                tentative_g_score = g_score[current] + distance
+            
+            if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g_score
+                f_score[neighbor] = tentative_g_score + self,heuristic(neighbor, goal_node)
+
+                heapq.heappush(open_set, (f-f_score[neighbor], neighbor))
+
+        #Return failure if there's no path
+        return None
+
+    def reconstruct_path(self, came_from, current):
+
+        #Reconstruct the path from goat to start
+        path = []
+        while current:
+            path.append(current)
+            current = came_from[current]
+        path.revers() #Reverse the path from start to goal
+        return path
     
     @staticmethod
     def straight_path(request, map_obj):
@@ -337,140 +278,6 @@ class Pathing:
             raise ValueError(f"Latitude {lat} is out of bounds. Must be between -90 and 90.")
         if not -180 <= lon <= 180:
             raise ValueError(f"Longitude {lon} is out of bounds. Must be between -180 and 180.")
-        
-
-    def a_star(request, grid_map):
-        try:
-            loc_a_name = request.POST.get("locationA")
-            loc_b_name = request.POST.get("locationB")
-            ports = parse_ports()
-
-            start_coords = next((port for port in ports if port["name"] == loc_a_name), None)
-            print(f"start_coords = {start_coords}")
-            goal_coords = next((port for port in ports if port["name"] == loc_b_name), None)
-            print(f"goald_coords = {goal_coords}")
-            
-            start = grid_map.get_node(float(start_coords["latitude"]), float(start_coords["longitude"]))
-            print(f"Initial node set, {start}")
-            goal = grid_map.get_node(float(goal_coords["latitude"]), float(goal_coords["longitude"]))
-            print(f"End node set, {goal}")
-
-            if start is None or goal is None:
-                messages.error(request, "One or both locations not found.")
-                return None
-            
-            if not start.is_valid or not goal.is_valid:
-                raise ValueError("One or more nodes are invalid.")
-            
-            
-            #DEBUG------------------------------------------------------------------
-            print(f"Debugging: Start Node: {start}, Goal Node: {goal}")
-            
-            #implement Heuristics
-            def haversine(lat1, lon1, lat2, lon2):
-                #convert decimal degrees to radians
-                lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-
-                #Haversine formula
-                dlat = lat2 - lat1
-                dlon = lon2 - lon1
-                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-                c = 2 * asin(sqrt(a))
-                #earth radius in kilometers
-                km = 6371 * c
-                return km
-            
-            #open and closed sets 
-            #open sets contain nodes that have been discovered but not evaluated
-            open_set = []
-            open_set_tracker = set()
-            heapq.heappush(open_set, (0, start))
-            open_set_tracker.add(start)
-            #DEBUG--------------------------------------------------------------------
-            print(f"Open set tracker before removing the current node: {open_set_tracker}")
-            #closed sets contain nodes that have been evaluated
-            closed_set = set()
-
-            #distance and movement cost from initial/start state to current node
-            g_score = {node: float("inf") for node in grid_map.nodes.values()}
-            g_score[start] = 0 #the initial state, position 0
-
-            #estimated movement cost from current node to end/goal node
-            f_score = {node: float("inf") for node in grid_map.nodes.values()}
-            f_score[start] = haversine(start.lat, start.lon, goal.lat, goal.lon)
-            #DEBUG-------------------------------------------------------------------------------
-            print(f"Debugging: Initial heuristic value: {f_score[start]}")
-            #path reconstruction
-            came_from = {}
-
-            coast_lines = Pathing.is_coast()
-
-            #threshold of at least 10 km away from the coast
-            threshold = 10
-
-            def reconstruct_path(came_from, current):
-                path = []
-                while current in came_from:
-                    path.append(current)
-                    current = came_from[current]
-                path.append(current)
-                path.reverse()
-                return path
-    
-            while open_set:
-
-                #search for node in open set with the lowest f_score value
-                current = heapq.heappop(open_set)[1]
-                open_set_tracker.remove(current)
-                #DEBUG-----------------------------------------------------------------
-                print(f"Debugging: Current Node: {current}") 
-
-                if current == goal:
-                    print("Debugg: Goal reached, reconstructing path.")
-                    return reconstruct_path(came_from, current)
-                
-                closed_set.add(current)
-
-                for neighbor in current.neighbors:
-                    #DEBUG-----------------------------------------------------------------
-                    print(f"Debugging: Evaluating neighbor: {neighbor}")
-                    if Pathing.is_near_coast((neighbor.lat, neighbor.lon), coast_lines, threshold):
-                        #DEBUG----------------------------------------------------------------------
-                        print(f"Debugging: Neighbor {neighbor} is near coast and will be skipped.")
-                        continue
-                    
-                    if neighbor in closed_set:
-                        #ignore evaluated neighbors and continue
-                        continue
-
-                    #hesitant approach
-                    tentative_g_score = g_score[current] + haversine(current.lat, current.lon, neighbor.lat, neighbor.lon)
-                    #DEBUG-----------------------------------------------------------------------------
-                    print(f"Debugging: Tentative G Score for {neighbor}: {tentative_g_score}")
-
-                    if tentative_g_score < g_score[neighbor]:
-                        came_from[neighbor] = current
-                        g_score[neighbor] = tentative_g_score
-                        f_score[neighbor] = tentative_g_score + haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
-
-                        # Add the neighbor to the open set if it's not there already
-                        if neighbor not in open_set_tracker:
-                            heapq.heappush(open_set, (f_score[neighbor], neighbor))
-                            open_set_tracker.add(neighbor)
-                    
-                    #when a node is popped from the open set, then remove it from the tracker
-                    open_set_tracker.remove(current)
-                    
-                    #BEST PATH
-                    came_from[neighbor] = current
-                    g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score +haversine(neighbor.lat, neighbor.lon, goal.lat, goal.lon)
-
-            #the optimal path isnt found
-            return None
-        except KeyError as e:
-            print(f"Key error encountered: {e}")
-            print(f"Current state of open_set_tracker: {open_set_tracker}")
         
     def dijkstra(self, request, grid_map):
 
