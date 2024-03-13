@@ -140,7 +140,35 @@ class GridMap:
                     node_id +=len(line.coords)
         return coastline
     
+    def get_closest_node(self, lat, lon):
+        closest_node = None
+        min_distance = float("inf")
+        for node in self.nodes.values():
+            distance = self.calcualte_distance(node, lat, lon)
 
+            if distance < min_distance:
+                min_distance = distance
+                closest_node = node
+        return closest_node
+
+    def calcualte_distance(node, lat2, lon2):
+
+        R = 6361.0 #Earth radius in kilometers
+
+        #Convert latitude and longitude from degrees to radians
+        lat1, lon1 = map(radians, [node.latitude, node.longitude])
+        lat2, lon2 = map(radians, [lat2, lon2])
+
+        #Haversine formula
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * asin(sqrt(a))
+
+        #Distance in kilometers
+        distance = R * c
+        return distance
+    
 '''
 class Map_Marking:
 
