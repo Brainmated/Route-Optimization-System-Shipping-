@@ -63,8 +63,6 @@ handles wrapping of the map so the eastern most and western most edges connect.
 
 class GridMap:
 
-    
-
     script_dir = os.path.dirname(os.path.abspath(__file__))
     land = gpd.read_file("routing/data/geopackages/ne_10m_land.gpkg")
 
