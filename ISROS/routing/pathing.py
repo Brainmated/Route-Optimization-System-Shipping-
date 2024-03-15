@@ -17,16 +17,23 @@ from django.contrib import messages
 from geopy.distance import great_circle
 from shapely.geometry import Point, Polygon, MultiPolygon
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+LAT_MIN, LAT_MAX, LON_MIN, LON_MAX = -90, 90, -180, 180
+LAT_STEP, LON_STEP = 0.3, 0.3
 
 class Node:
 
-    def __init__(self, id, lat, lon):
+    def __init__(self, lat, lon, id=None, walkable=False):
         self.id = id
         self.lat = float(lat) if lat is not None else None
         self.lon = float(lon) if lon is not None else None
         self.neighbors = []
         self.distances = {}
-
+        self.walkable = walkable
+    
     def __lt__(self, other):
         return self.id < other.id
 
@@ -45,6 +52,8 @@ class Node:
         self.neighbors.append(neighbor)
         self.distances[neighbor] = distance
 
+    def __repr__(self):
+        return f"Node(id= {self.id}, lat= {self.lat}, lon= {self.lon}, walkable={self.walkable})"
 '''
 The GridMap class creates a node for every integer latitude/longitude
 intersection and then adds edges to each node's neighbors.
@@ -54,103 +63,103 @@ handles wrapping of the map so the eastern most and western most edges connect.
 
 class GridMap:
 
+    
+
     script_dir = os.path.dirname(os.path.abspath(__file__))
     land = gpd.read_file("routing/data/geopackages/ne_10m_land.gpkg")
-    coastline = gpd.read_file("routing/data/geopackages/ne_10m_coastline.gpkg")
 
-    #current method will test for the 1° x 1° grid
     def __init__(self, distance_threshold):
         self.nodes = set()
-        self.land_nodes = self.is_land()
-        self.coast_nodes = self.is_coast()
         self.distance_threshold = distance_threshold
         self.grid = {}
-        self.create_grid()
-        self.create_edges()
+        self.create_grid()  
+        self.create_edges()  
+        self.mark_land_nodes()
+        self.gfd_nodes = gpd.GeoDataFrame(
+            [{"geometry": Point(node.lon, node.lat), "walkable": node.walkable} for node in self.nodes]
+        )
+        #Create a spatial index
+        self.sindex = self.gfd_nodes.sindex
 
+    def is_point_on_land(self, point):
+
+        possible_matches_index = list(self.land.sindex.query(point))
+        if not possible_matches_index:
+            return False
+        possible_matches = self.land.iloc[possible_matches_index]
+        return any(point.within(land_polygon) for land_polygon in possible_matches.geometry)
+    
     def create_grid(self):
-        for node in self.land_nodes + self.coast_nodes:
-            #Calculate the grid cell key as a tuple (lat_index, lon_index)
-            lat_index = int(node.lat // 0.1)
-            lon_index = int(node.lon // 0.1)
-            grid_cell_key = (lat_index, lon_index)
+        for lat in np.arange(LAT_MIN, LAT_MAX, LAT_STEP):
+            for lon in np.arange(LON_MIN, LON_MAX, LON_STEP):
+                point = Point(lon, lat)
+                if not self.is_point_on_land(point):
+                    node = Node(lat, lon, walkable=True)
+                    self.nodes.add(node)
+                    lat_index = int(lat / LAT_STEP)
+                    lon_index = int(lon / LON_STEP)
+                    grid_cell_key = (lat_index, lon_index)
 
-            #Add the node to the gride cell
-            if grid_cell_key not in self.grid:
-                self.grid[grid_cell_key] = []
-            self.grid[grid_cell_key].append(node)
-            self.nodes.add(node)
+                if grid_cell_key not in self.grid:
+                    self.grid[grid_cell_key] = []
+                self.grid[grid_cell_key].append(node)
+    
+    def mark_land_nodes(self):
+        for node in self.nodes:
+            point = Point(node.lon, node.lat)
+            if self.is_point_on_land(point):
+                node.walkable = False
 
     def create_edges(self):
-        #Iterate over the grid cells
-        for grid_cell_key in self.grid:
-            #Get the current cell and the neighboring cells keys
-            lat_index, lon_index = grid_cell_key
-            neighboring_keys = product(
-                [lat_index - 1, lat_index, lat_index +1],
-                [lon_index -1, lon_index, lon_index +1]
-            )
+        # Iterate over the nodes rather than the grid cells
+        for node1 in self.nodes:
+            for node2 in self.nodes:
+                if node1 != node2:
+                    distance = self.calculate_distance(node1.lat, node1.lon, node2.lat, node2.lon)
+                    if distance <= self.distance_threshold and node2.walkable:
+                        node1.add_neighbor(node2, distance)
 
-            #Iterate over each node in the current cell
-            for node1 in self.grid[grid_cell_key]:
-                #Check nodes in neighboring cells
-                for neighbor_key in neighboring_keys:
-                    if neighbor_key in self.grid and neighbor_key != grid_cell_key:
-                        for node2 in self.grid[neighbor_key]:
-                            distance = self.calculate_distance(node1.lat, node1.lon, node2.lat, node2.lon)
-
-                            if distance <= self.distance_threshold:
-                                node1.add_neighbor(node2, distance)
-                                node2.add_neighbor(node1, distance)
-    
-    def heuristic(self, node1, node2):
-        return self.haversine_distance(node1.lat, node1.lon, node2.lat, node2.lon)
-    
     @staticmethod
     def is_land():
-        land_areas = []
+        land_nodes = []
         node_id = 0
+        # Iterate through the land GeoDataFrame "geometry" column
         for _, row in GridMap.land.iterrows():
             geometry = row["geometry"]
             if isinstance(geometry, Polygon):
-                land_areas += [Node(node_id, *coords) for coords in geometry.exterior.coords]
-                node_id += len(geometry.exterior.coords)
+                for coords in geometry.exterior.coords:
+                    # Swap coords[1] and coords[0] to match lat, lon order
+                    land_nodes.append(Node(coords[1], coords[0], node_id, walkable=False))
+                    node_id += 1
             elif isinstance(geometry, MultiPolygon):
                 for polygon in geometry.geoms:
-                    land_areas += [Node(node_id, *coords) for coords in polygon.exterior.coords]
-                    node_id += len(polygon.exterior.coords)
-        
-        return land_areas
+                    for coords in polygon.exterior.coords:
+                        # Swap coords[1] and coords[0] to match lat, lon order
+                        land_nodes.append(Node(coords[1], coords[0], node_id, walkable=False))
+                        node_id += 1
+        # Optionally, log the count of generated non-walkable land nodes
+        print(f"Generated non-walkable land nodes: {len(land_nodes)}")
+        return land_nodes
     
-    def is_ocean():
-        pass
-    
-    #------------------------SUCCESS-------------------------------------------------------------
-    @staticmethod
-    def is_coast():
-        coastline = []
-        node_id = 0
-        for _, row in GridMap.coastline.iterrows():
-            if isinstance(row["geometry"], LineString):
-                coastline += [Node(node_id,y,x) for x, y in row["geometry"].coords]
-                node_id +=len(row["geometry"].coords)
+    def get_nearest_walkable_node(self, target_lat, target_lon):
+        # Create a point from the target coordinates
+        target_point = Point(target_lon, target_lat)
 
-            elif isinstance(row["geometry"], MultiLineString):
-                for line in row["geometry"].geoms:
-                    coastline += [Node(node_id,y,x) for x, y in line.coords]
-                    node_id +=len(line.coords)
-        return coastline
-    
-    def get_closest_node(self, lat, lon):
-        closest_node = None
-        min_distance = float("inf")
-        for node in self.nodes:
-            distance = self.calculate_distance(node, lat, lon)
+        # Query the spatial index for the nearest point
+        possible_matches_index = list(self.sindex.nearest(target_point.bounds, 1))
+        possible_matches = self.gdf_nodes.iloc[possible_matches_index]
 
-            if distance < min_distance:
-                min_distance = distance
-                closest_node = node
-        return closest_node
+        # Filter out non-walkable nodes
+        possible_matches = possible_matches[possible_matches['walkable']]
+
+        if not possible_matches.empty:
+            # If there are walkable nodes, return the closest one
+            closest_node_data = possible_matches.iloc[0]
+            closest_node = Node(closest_node_data.geometry.y, closest_node_data.geometry.x, walkable=True)
+            return closest_node
+        else:
+            # If there are no walkable nodes, return None
+            return None
 
     def calculate_distance(self, lat1, lon1, lat2, lon2):
 
@@ -169,6 +178,10 @@ class GridMap:
         #Distance in kilometers
         distance = R * c
         return distance
+    
+    def heuristic(self, node1, node2):
+        # Use the haversine() method to estimate the distance between node1 and node2.
+        return self.calculate_distance(node1.lat, node1.lon, node2.lat, node2.lon)
     
 '''
 class Map_Marking:
@@ -189,64 +202,82 @@ class Pathing:
     def __init__(self, grid_map):
 
         self.grid_map = grid_map
-    
-    def heuristic(self, node1, node2):
-        dx = abs(node1.x - node2.x)
-        dy = abs(node1.y - node2.y)
-        return math.sqrt(dx * dx + dy * dy)
 
     def a_star(self, start_node, goal_node):
 
+        #Check the start and end nodes for walkability
+        if not (start_node.walkable and goal_node.walkable):
+            logger.error("Start or goal node is not walkable.")
+            raise ValueError("Start or goal node is not walkable.")
+        
+        # Ensure the start and end nodes are positioned correctly
+        if not (start_node.is_valid() and goal_node.is_valid()):
+            logger.error("Start or goal node has invalid positioning.")
+            raise ValueError("Start or goal node has invalid positioning.")
+
+        logger.info("Starting A* with start node: %s and goal node: %s", start_node, goal_node)
+
         open_set = []
-        closed_set = set() #To trac ndoes already visited or in open_set
+        closed_set = set()  # To track nodes already visited or in open_set
 
         heapq.heappush(open_set, (0, start_node))
         came_from = {start_node: None}
 
-        #Cost from start to a node
+        # Cost from start to a node
         g_score = {start_node: 0}
 
-        #Estimated cost from start to goal through a node
-        f_score = {start_node: self.heuristic(start_node, goal_node)}
+        # Estimated cost from start to goal through a node
+        f_score = {start_node: self.grid_map.heuristic(start_node, goal_node)}
 
         while open_set:
             current = heapq.heappop(open_set)[1]
+            logger.debug(f"Current node: {current}")
+            logger.debug(f"Open set: {[n.id for _, n in open_set]}")
+            logger.debug(f"Closed set: {[n.id for n in closed_set]}")
+            logger.debug(f"Came from: {came_from}")
 
             if current in closed_set:
-                continue #Skip processing this node if its already been visited
+                continue  # Skip processing this node if it's already been visited
 
             if current == goal_node:
-                return self.reconstruct_path(came_from, current)
+                path = self.reconstruct_path(came_from, current)
+                logger.info("Path found: %s", path)
+                return path
             
-            closed_set.add(current) #Add the current node to the closed_set
+            closed_set.add(current)  # Add the current node to the closed_set
 
-            for neighbor, distance in current.neighbors.items():
-                if neighbor in closed_set:
-                    continue #ignore the neighbor which is already evaluated
+            for neighbor in current.neighbors:
+                distance = current.distances[neighbor]
+
+                if not neighbor.walkable or neighbor in closed_set:
+                    continue  # Ignore the neighbor which is not walkable or already evaluated
 
                 tentative_g_score = g_score[current] + distance
             
-                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                if neighbor not in g_score or tentative_g_score < g_score.get(neighbor, float("inf")):
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal_node)
+                    f_score[neighbor] = tentative_g_score + self.grid_map.heuristic(neighbor, goal_node)
 
-                    #Only push the neighbor to the heap if its not there already
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                    logger.debug(f"Setting predecessor of {neighbor} to {current}")
+
+                    # Only push the neighbor to the heap if it's not there already
                     if neighbor not in open_set:
                         heapq.heappush(open_set, (f_score[neighbor], neighbor))
-                    
 
-        #Return failure if there's no path
+        logger.warning("Failed to find a path from start to goal.")
+        # Return failure if there's no path
         return None
 
     def reconstruct_path(self, came_from, current):
-
-        #Reconstruct the path from goat to start
+        # Reconstruct the path from goal to start by walking backwards from the goal
         path = []
         while current:
             path.append(current)
             current = came_from[current]
-        path.reverse() #Reverse the path from start to goal
+        path.reverse()  # Reverse the path from start to goal
+        logger.debug("Reconstructed path: %s", path)
         return path
     
     @staticmethod
@@ -333,8 +364,8 @@ class Pathing:
         loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
         loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
         
-        start_node = grid_map.get_closest_node(*loc_a_coord)
-        end_node = grid_map.get_closest_node(*loc_b_coord)
+        start_node = grid_map.get_nearest_walkable_node(*loc_a_coord)
+        end_node = grid_map.get_nearest_walkable_node(*loc_b_coord)
 
         
         queue = []
