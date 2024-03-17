@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 LAT_MIN, LAT_MAX, LON_MIN, LON_MAX = -90, 90, -180, 180
-LAT_STEP, LON_STEP = 1, 1
+LAT_STEP, LON_STEP = 0.3, 0.3
 
 class Node:
 
@@ -130,27 +130,28 @@ class GridMap:
         return not precise_matches.empty
 
     def create_grid(self, start_node=None, goal_node=None):
-        # Calculate the total number of iterations
-        lat_range = range(LAT_MIN, LAT_MAX + 1, LAT_STEP)
-        lon_range = range(LON_MIN, LON_MAX + 1, LON_STEP)
+        lat_range = np.arange(LAT_MIN, LAT_MAX + LAT_STEP, LAT_STEP)
+        lon_range = np.arange(LON_MIN, LON_MAX + LON_STEP, LON_STEP)
         total_iterations = len(lat_range) * len(lon_range)
         iteration_count = 0
+        progress_update_frequency = total_iterations // 100  # Update progress every 1%
 
         # Iterate over the entire map
         for lat in lat_range:
             for lon in lon_range:
                 iteration_count += 1
 
-                # Calculate and print the progress percentage
-                progress = (iteration_count / total_iterations) * 100
-                print(f"Grid creation progress: {progress:.2f}%", end='\r')
+                # Calculate and print the progress percentage at specified frequency
+                if iteration_count % progress_update_frequency == 0:
+                    progress = (iteration_count / total_iterations) * 100
+                    print(f"Grid creation progress: {progress:.2f}%", end='\r')
 
                 # Only add nodes that are not on land
                 point = Point(lon, lat)
                 if not self.point_is_land(point):
-                    node = Node(lat, lon)  # Assuming Node class initialization is correct
+                    node = Node(lat, lon)  
                     self.nodes.add(node)
-                    grid_cell_key = (lat, lon)
+                    grid_cell_key = (round(lat, 2), round(lon, 2))  # Round keys to match step precision
 
                     if grid_cell_key not in self.grid:
                         self.grid[grid_cell_key] = []
