@@ -8,6 +8,7 @@ import networkx as nx
 import pickle
 import random
 import heapq
+from concurrent.futures import ProcessPoolExecutor
 import math
 from math import radians, cos, sin, asin, sqrt
 from itertools import product
@@ -135,29 +136,36 @@ class GridMap:
         lat_range = np.arange(LAT_MIN, LAT_MAX + LAT_STEP, LAT_STEP)
         lon_range = np.arange(LON_MIN, LON_MAX + LON_STEP, LON_STEP)
         total_iterations = len(lat_range) * len(lon_range)
-        iteration_count = 0
         progress_update_frequency = total_iterations // 100  # Update progress every 1%
 
-        # Iterate over the entire map
-        for lat in lat_range:
-            for lon in lon_range:
-                iteration_count += 1
+        # Define a function to process a single lat-lon pair that can be called in parallel
+        def process_lat_lon(lat, lon):
+            point = Point(lon, lat)
+            if not self.point_is_land(point):
+                node = Node(lat, lon)
+                grid_cell_key = (round(lat, 2), round(lon, 2))  # Round keys to match step precision
+                return node, grid_cell_key
+            return None
 
-                # Calculate and print the progress percentage at specified frequency
-                if iteration_count % progress_update_frequency == 0:
-                    progress = (iteration_count / total_iterations) * 100
-                    print(f"Grid creation progress: {progress:.2f}%", end='\r')
+        # Use ProcessPoolExecutor to parallelize grid creation
+        with ProcessPoolExecutor() as executor:
+            results = executor.map(process_lat_lon, product(lat_range, lon_range))
 
-                # Only add nodes that are not on land
-                point = Point(lon, lat)
-                if not self.point_is_land(point):
-                    node = Node(lat, lon)  
-                    self.nodes.add(node)
-                    grid_cell_key = (round(lat, 2), round(lon, 2))  # Round keys to match step precision
+        iteration_count = 0
+        # Iterate over the results of the parallel computation
+        for result in results:
+            iteration_count += 1
+            # Calculate and print the progress percentage at specified frequency
+            if iteration_count % progress_update_frequency == 0:
+                progress = (iteration_count / total_iterations) * 100
+                print(f"Grid creation progress: {progress:.2f}%", end='\r')
 
-                    if grid_cell_key not in self.grid:
-                        self.grid[grid_cell_key] = []
-                    self.grid[grid_cell_key].append(node)
+            if result is not None:
+                node, grid_cell_key = result
+                self.nodes.add(node)
+                if grid_cell_key not in self.grid:
+                    self.grid[grid_cell_key] = []
+                self.grid[grid_cell_key].append(node)
 
         print("\nGrid creation complete!")
 
