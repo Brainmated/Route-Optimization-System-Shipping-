@@ -114,8 +114,10 @@ class GridMap:
             return False
         
     def load_land_nodes(self):
-        for lat in range(LAT_MIN, LAT_MAX + 1, LAT_STEP):
-            for lon in range(LON_MIN, LON_MAX + 1, LON_STEP):
+        lat_range = np.arange(LAT_MIN, LAT_MAX + LAT_STEP, LAT_STEP)
+        lon_range = np.arange(LON_MIN, LON_MAX + LON_STEP, LON_STEP)
+        for lat in lat_range:
+            for lon in lon_range:
                 point = Point(lon, lat)
                 if self.point_is_land(point):
                     self.land_nodes.add((lat, lon))
