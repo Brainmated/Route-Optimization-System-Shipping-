@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.urls import reverse
 from .forms import SignUpForm
-from .pathing import Pathing, GridMap
+from .pathing import Pathing, GridMap, Map_Marking
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 import folium
@@ -169,45 +169,19 @@ def simulate(request):
     if loc_a is None or loc_b is None:
         return JsonResponse({"error": "One or both locations not found."}, status=400)
 
-    start_node = grid_map.get_closest_node(float(loc_a['latitude']), float(loc_a['longitude']))
-    goal_node = grid_map.get_closest_node(float(loc_b['latitude']), float(loc_b['longitude']))
+    start_node = grid_map.get_nearest_walkable_node(float(loc_a['latitude']), float(loc_a['longitude']))
+    goal_node = grid_map.get_nearest_walkable_node(float(loc_b['latitude']), float(loc_b['longitude']))
+
+    # Check if start_node and goal_node are returned correctly
+    if start_node is None:
+        return JsonResponse({"error": "Start location is not walkable or not found."}, status=400)
+
+    if goal_node is None:
+        return JsonResponse({"error": "Goal location is not walkable or not found."}, status=400)
 
     #obtaining the a_star path -------------------------------------------------------------------------------------------------------FIX
     #result = Pathing.a_star(request, grid_map)
-
-    ''' 
-    For comparison reasons, the following lines draw over my folium grid.
-    Uncomment with caution because it's going to draw all your computational power.
-    for node in grid_map.nodes.values():
-        folium.CircleMarker(
-            location=[node.lat, node.lon],
-            radius=1,
-            color='blue'
-        ).add_to(m)
-
-        for neighbor in node.neighbors:
-            folium.PolyLine(
-                locations=[(node.lat, node.lon), (neighbor.lat, neighbor.lon)],
-                weight=1,
-                color='green'
-            ).add_to(m)
-    '''
-    '''
-    The following code draws the nodes on folium, uncomment with caution.
-    coastline_nodes = Pathing.is_coast()
-    
-    # Iterate over the coastline nodes and draw them on the map
-    for node in coastline_nodes:
-        folium.CircleMarker(
-            location=[node.lat, node.lon],  # Ensure lat, lon order for folium
-            radius=1,
-            color='blue',  # Use a distinctive color for coastlines
-            fill=True,
-            fill_color='red',
-            fill_opacity=1.0
-        ).add_to(m)
-    ''' 
-
+    grid_map.initialize_map(start_node, goal_node)
     pathing_instance = Pathing(grid_map)
     try:
         a_star_path = pathing_instance.a_star(start_node, goal_node)

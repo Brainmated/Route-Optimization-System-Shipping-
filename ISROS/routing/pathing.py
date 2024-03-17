@@ -5,6 +5,7 @@ from shapely.geometry import Point, LineString, MultiLineString
 import os
 import numpy as np
 import networkx as nx
+import pickle
 import random
 import heapq
 import math
@@ -14,15 +15,17 @@ import osmnx as ox
 import geopandas as gpd
 from .ports import parse_ports
 from django.contrib import messages
+from sklearn.neighbors import KDTree
 from geopy.distance import great_circle
 from shapely.geometry import Point, Polygon, MultiPolygon
+from pathlib import Path
 
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 LAT_MIN, LAT_MAX, LON_MIN, LON_MAX = -90, 90, -180, 180
-LAT_STEP, LON_STEP = 0.3, 0.3
+LAT_STEP, LON_STEP = 1, 1
 
 class Node:
 
@@ -65,59 +68,110 @@ class GridMap:
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     land = gpd.read_file("routing/data/geopackages/ne_10m_land.gpkg")
+    land_sindex = land.sindex  # Create the spatial index
 
     def __init__(self, distance_threshold):
         self.nodes = set()
         self.distance_threshold = distance_threshold
         self.grid = {}
-        self.create_grid()  
-        self.create_edges()  
-        self.mark_land_nodes()
-        self.gfd_nodes = gpd.GeoDataFrame(
-            [{"geometry": Point(node.lon, node.lat), "walkable": node.walkable} for node in self.nodes]
-        )
-        #Create a spatial index
-        self.sindex = self.gfd_nodes.sindex
+        self.land_nodes = set()
+        self.load_land_nodes()
 
-    def is_point_on_land(self, point):
+    def initialize_map(self, start_node, goal_node):
+        # Try to load the pre-generated grid
+        if not self.load_grid():
+            # If the grid does not exist, create it and save it
+            self.create_grid(start_node, goal_node)
+            self.create_edges()
+            self.mark_land_nodes()
+            self.save_grid()
 
-        possible_matches_index = list(self.land.sindex.query(point))
-        if not possible_matches_index:
+    def save_grid(self):
+        # Serialize the grid and nodes to a file
+        filepath = Path(self.script_dir) / 'grid_map.pkl'
+        with filepath.open('wb') as file:
+            pickle.dump((self.grid, self.nodes), file)
+
+        file_size = filepath.stat().st_size
+        print(f"Grid map saved! File size: {file_size} bytes.")
+
+    def load_grid(self):
+        # Deserialize the grid and nodes from a file if it exists
+        filepath = Path(self.script_dir) / 'grid_map.pkl'
+        if filepath.exists():
+            file_size = filepath.stat().st_size
+            print(f"Loading grid map... Estimated file size: {file_size} bytes.")
+            try:
+                with filepath.open('rb') as file:
+                    self.grid, self.nodes = pickle.load(file)
+                print("Grid map loaded successfully!")
+                return True
+            except (FileNotFoundError, pickle.UnpicklingError):
+                print("Failed to load grid map.")
+                return False
+        else:
+            print("No grid map file found.")
             return False
-        possible_matches = self.land.iloc[possible_matches_index]
-        return any(point.within(land_polygon) for land_polygon in possible_matches.geometry)
-    
-    def create_grid(self):
-        for lat in np.arange(LAT_MIN, LAT_MAX, LAT_STEP):
-            for lon in np.arange(LON_MIN, LON_MAX, LON_STEP):
+        
+    def load_land_nodes(self):
+        for lat in range(LAT_MIN, LAT_MAX + 1, LAT_STEP):
+            for lon in range(LON_MIN, LON_MAX + 1, LON_STEP):
                 point = Point(lon, lat)
-                if not self.is_point_on_land(point):
-                    node = Node(lat, lon, walkable=True)
-                    self.nodes.add(node)
-                    lat_index = int(lat / LAT_STEP)
-                    lon_index = int(lon / LON_STEP)
-                    grid_cell_key = (lat_index, lon_index)
+                if self.point_is_land(point):
+                    self.land_nodes.add((lat, lon))
 
-                if grid_cell_key not in self.grid:
-                    self.grid[grid_cell_key] = []
-                self.grid[grid_cell_key].append(node)
-    
-    def mark_land_nodes(self):
-        for node in self.nodes:
-            point = Point(node.lon, node.lat)
-            if self.is_point_on_land(point):
-                node.walkable = False
+    def point_is_land(self, point):
+        # Use the spatial index to find potential matches more efficiently
+        possible_matches_index = list(self.land_sindex.intersection(point.bounds))
+        possible_matches = self.land.iloc[possible_matches_index]
+
+        # Check for precise matches
+        precise_matches = possible_matches[possible_matches.intersects(point)]
+        return not precise_matches.empty
+
+    def create_grid(self, start_node=None, goal_node=None):
+        # Calculate the total number of iterations
+        lat_range = range(LAT_MIN, LAT_MAX + 1, LAT_STEP)
+        lon_range = range(LON_MIN, LON_MAX + 1, LON_STEP)
+        total_iterations = len(lat_range) * len(lon_range)
+        iteration_count = 0
+
+        # Iterate over the entire map
+        for lat in lat_range:
+            for lon in lon_range:
+                iteration_count += 1
+
+                # Calculate and print the progress percentage
+                progress = (iteration_count / total_iterations) * 100
+                print(f"Grid creation progress: {progress:.2f}%", end='\r')
+
+                # Only add nodes that are not on land
+                point = Point(lon, lat)
+                if not self.point_is_land(point):
+                    node = Node(lat, lon)  # Assuming Node class initialization is correct
+                    self.nodes.add(node)
+                    grid_cell_key = (lat, lon)
+
+                    if grid_cell_key not in self.grid:
+                        self.grid[grid_cell_key] = []
+                    self.grid[grid_cell_key].append(node)
+
+        print("\nGrid creation complete!")
 
     def create_edges(self):
-        # Iterate over the nodes rather than the grid cells
+        # Convert nodes to a list and construct a KDTree for efficient neighbor lookup
+        nodes_list = list(self.nodes)
+        kd_tree = KDTree([(node.lat, node.lon) for node in nodes_list])
+        
         for node1 in self.nodes:
-            for node2 in self.nodes:
-                if node1 != node2:
+            # Query the KDTree for nodes within the distance threshold
+            indices = kd_tree.query_radius([[node1.lat, node1.lon]], r=self.distance_threshold)
+            for i in indices[0]:
+                node2 = nodes_list[i]
+                if node1 != node2 and node2.walkable:
                     distance = self.calculate_distance(node1.lat, node1.lon, node2.lat, node2.lon)
-                    if distance <= self.distance_threshold and node2.walkable:
-                        node1.add_neighbor(node2, distance)
+                    node1.add_neighbor(node2, distance)
 
-    @staticmethod
     def is_land():
         land_nodes = []
         node_id = 0
@@ -143,21 +197,24 @@ class GridMap:
         # Create a point from the target coordinates
         target_point = Point(target_lon, target_lat)
 
-        # Query the spatial index for the nearest point
-        possible_matches_index = list(self.sindex.nearest(target_point.bounds, 1))
-        possible_matches = self.gdf_nodes.iloc[possible_matches_index]
+        # Initialize variables to keep track of the closest walkable node and its distance
+        closest_node = None
+        closest_distance = float('inf')
 
-        # Filter out non-walkable nodes
-        possible_matches = possible_matches[possible_matches['walkable']]
+        # Iterate through all nodes to find the nearest walkable node
+        for node in self.nodes:  # Assuming self.nodes is an iterable of Node objects
+            if (node.lat, node.lon) not in self.land_nodes:
+                # Calculate the distance between the target point and the current node
+                node_point = Point(node.lon, node.lat)
+                distance = target_point.distance(node_point)  # Ensure distance is calculated appropriately
 
-        if not possible_matches.empty:
-            # If there are walkable nodes, return the closest one
-            closest_node_data = possible_matches.iloc[0]
-            closest_node = Node(closest_node_data.geometry.y, closest_node_data.geometry.x, walkable=True)
-            return closest_node
-        else:
-            # If there are no walkable nodes, return None
-            return None
+                # Update the closest walkable node and its distance if this node is closer
+                if distance < closest_distance:
+                    closest_node = node
+                    closest_distance = distance
+
+        # Return the closest walkable node or None if no walkable node is found
+        return closest_node
 
     def calculate_distance(self, lat1, lon1, lat2, lon2):
 
@@ -181,19 +238,38 @@ class GridMap:
         # Use the haversine() method to estimate the distance between node1 and node2.
         return self.calculate_distance(node1.lat, node1.lon, node2.lat, node2.lon)
     
-'''
+
 class Map_Marking:
+    @staticmethod
+    def mark_grid_on_map(m, grid_map, grid_size):
+        # Create horizontal lines (latitude lines)
+        for lat in range(-90, 90, grid_size):
+            folium.PolyLine([(lat, -180), (lat, 180)], color="blue", weight=0.1).add_to(m)
 
-    #check validity of shape files
-    def __init__(self, land_shp, water_shp):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.land_data = gpd.read_file("routing/data/ne_10m_land.shp")
-        self.coastline_data = gpd.read_file("routing/data/ne_10m_coastline.shp")
+        # Create vertical lines (longitude lines)
+        for lon in range(-180, 180, grid_size):
+            folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
+        # Mark all the nodes on the map
+        for node in grid_map.nodes:
+            folium.CircleMarker(
+                location=[node.lat, node.lon],
+                radius=1,
+                color='green' if node.walkable else 'red',
+                fill=True,
+                fill_opacity=0.7
+            ).add_to(m)
 
-    #---------------------------------THE SHP FILES ARE VALID----------------------------------
-    #---------------------------------CHECK WHY THE RANDOM POSITIONS ARENT THAT RANDOM---------
-'''
+        # Optionally, draw edges as well (commented out by default for performance reasons)
+        # for node in grid_map.nodes:
+        #     for neighbor in node.neighbors:
+        #         folium.PolyLine(
+        #             locations=[(node.lat, node.lon), (neighbor.lat, neighbor.lon)],
+        #             weight=1,
+        #             color='green'
+        #         ).add_to(m)
+
+        return m
 
 class Pathing:
 
@@ -337,82 +413,6 @@ class Pathing:
             raise ValueError(f"Latitude {lat} is out of bounds. Must be between -90 and 90.")
         if not -180 <= lon <= 180:
             raise ValueError(f"Longitude {lon} is out of bounds. Must be between -180 and 180.")
-        
-    def dijkstra(self, request, grid_map):
-
-        land_data = grid_map.land_nodes()
-        grid_map.init_land(land_data)
-        coastline_data = Pathing.is_coast()
-        max_gap_distance = 0.5
-        connected_coastline = Pathing.connect_coastline_gaps(coastline_data, max_gap_distance)
-        grid_map.init_coastline(coastline_data)
-        
-
-        loc_a_name = request.POST.get("locationA")
-        loc_b_name = request.POST.get("locationB")
-        
-        ports = parse_ports() 
-        
-        loc_a = next((port for port in ports if port["name"] == loc_a_name), None)
-        loc_b = next((port for port in ports if port["name"] == loc_b_name), None)
-        
-        if loc_a is None or loc_b is None:
-            raise ValueError("One or both locations not found.")
-        
-        loc_a_coord = (float(loc_a['latitude']), float(loc_a['longitude']))
-        loc_b_coord = (float(loc_b['latitude']), float(loc_b['longitude']))
-        
-        start_node = grid_map.get_nearest_walkable_node(*loc_a_coord)
-        end_node = grid_map.get_nearest_walkable_node(*loc_b_coord)
-
-        
-        queue = []
-        heapq.heappush(queue, (0, start_node))
-        distances = {node: float("infinity") for node in grid_map.nodes.values()}
-        previous_nodes = {node: None for node in grid_map.nodes.values()}
-        distances[start_node] = 0
-
-        output_directory = r"E:/Programming in Python/applications/Thesis/ISROS/routing/data/path_classification"
-        os.makedirs(output_directory, exist_ok=True)
-        file_path = os.path.join(output_directory, f"path_classification_{loc_a_name}_to_{loc_b_name}.txt")
-
-        with open(file_path, "w") as file:
-            while queue:
-                current_distance, current_node = heapq.heappop(queue)
-
-                #DEBUGGING------------------------------------------------------------------------------------------------------
-                if grid_map.is_land_node(current_node):
-                    file.write(f"Node {current_node.id} is land\n")
-                elif grid_map.is_coastal_node(current_node):
-                    file.write(f"Node {current_node.id} is coastal\n")
-                else:
-                    file.write(f"Node {current_node.id} is ocean\n")
-
-                if current_node == end_node:
-                    break
-                for neighbor in current_node.neighbors:
-                    if grid_map.is_land_node(neighbor) or grid_map.is_coastal_node(neighbor):
-                        continue
-                    
-                    distance = current_distance + grid_map.calculate_distance(current_node, neighbor)
-
-                    if distance < distances[neighbor]:
-                        distances[neighbor] = distance
-                        previous_nodes[neighbor] = current_node
-                        heapq.heappush(queue, (distance, neighbor))
-
-            #reconstruct the path
-            path = []
-            current_node = end_node
-            while current_node:
-                path.insert(0, current_node)
-                current_node = previous_nodes[current_node]
-
-            file.write("Path from start to end:\n")
-            for node in path:
-                file.write(f"{node.id}\n")
-            
-        return path if path and path[0] == start_node else []
     
     def visibility_graph():
         pass
