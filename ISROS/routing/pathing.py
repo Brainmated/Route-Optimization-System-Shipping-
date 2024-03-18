@@ -87,7 +87,7 @@ class GridMap:
             self.mark_land_nodes()
             self.save_grid()
 
-    def save_grid(self):
+    def save_partial_grid(self):
         # Serialize the grid and nodes to a file
         filepath = Path(self.script_dir) / 'grid_map.pkl'
         with filepath.open('wb') as file:
@@ -96,7 +96,7 @@ class GridMap:
         file_size = filepath.stat().st_size
         print(f"Grid map saved! File size: {file_size} bytes.")
 
-    def load_grid(self):
+    def load_partial_grid(self):
         # Deserialize the grid and nodes from a file if it exists
         filepath = Path(self.script_dir) / 'grid_map.pkl'
         if filepath.exists():
@@ -132,11 +132,20 @@ class GridMap:
         precise_matches = possible_matches[possible_matches.intersects(point)]
         return not precise_matches.empty
 
-    def create_grid(self, start_node=None, goal_node=None):
+    def create_grid(self):
         lat_range = np.arange(LAT_MIN, LAT_MAX + LAT_STEP, LAT_STEP)
         lon_range = np.arange(LON_MIN, LON_MAX + LON_STEP, LON_STEP)
         total_iterations = len(lat_range) * len(lon_range)
         progress_update_frequency = total_iterations // 100  # Update progress every 1%
+
+        # Check if a partial grid already exists and load it
+        if self.load_partial_grid():
+            # Continue from where it left off
+            print("Resuming grid creation from saved state.")
+        else:
+            # Start fresh if no partial grid exists
+            self.grid = {}
+            self.nodes = set()
 
         # Define a function to process a single lat-lon pair that can be called in parallel
         def process_lat_lon(lat, lon):
@@ -427,3 +436,15 @@ class Pathing:
     
     def visibility_graph():
         pass
+
+    
+    # Define a main function to run grid creation
+def main():
+    # Create a GridMap instance with a defined distance threshold
+    grid_map = GridMap(distance_threshold=10)  # You should set an appropriate distance threshold
+
+    # Call the create_grid method to generate the grid
+    grid_map.create_grid()
+
+if __name__ == '__main__':
+    main()
