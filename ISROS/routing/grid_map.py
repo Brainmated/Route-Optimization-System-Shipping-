@@ -34,33 +34,33 @@ class GridMap:
         grid_gdf = gpd.GeoDataFrame(grid_df, geometry='geometry', crs="EPSG:4326")
         return grid_gdf
 
-def classify_land_water(self, chunk_size=1000):
-    total_points = len(self.grid_df)
-    num_chunks = (total_points // chunk_size) + 1
-    logging.debug(f"Classifying land and water in {num_chunks} chunks...")
+    def classify_land_water(self, chunk_size=1000):
+        total_points = len(self.grid_df)
+        num_chunks = (total_points // chunk_size) + 1
+        logging.debug(f"Classifying land and water in {num_chunks} chunks...")
 
-    # Initialize an empty Series to store results
-    is_land_series = pd.Series(False, index=self.grid_df.index)
+        # Initialize an empty Series to store results
+        is_land_series = pd.Series(False, index=self.grid_df.index)
 
-    for i in range(num_chunks):
-        # Calculate the range for the current chunk
-        start_idx = i * chunk_size
-        end_idx = start_idx + chunk_size
-        current_chunk = self.grid_df.iloc[start_idx:end_idx]
+        for i in range(num_chunks):
+            # Calculate the range for the current chunk
+            start_idx = i * chunk_size
+            end_idx = start_idx + chunk_size
+            current_chunk = self.grid_df.iloc[start_idx:end_idx]
 
-        # Perform the spatial join with the current chunk
-        points_within_land = gpd.sjoin(current_chunk, self.land, how='inner', predicate='intersects')
+            # Perform the spatial join with the current chunk
+            points_within_land = gpd.sjoin(current_chunk, self.land, how='inner', predicate='intersects')
 
-        # Update the is_land Series with the results
-        is_land_series.loc[points_within_land.index] = True
+            # Update the is_land Series with the results
+            is_land_series.loc[points_within_land.index] = True
 
-        # Report progress
-        progress = ((i + 1) / num_chunks) * 100
-        logging.debug(f"Chunk {i + 1} of {num_chunks} processed ({progress:.2f}% complete)")
+            # Report progress
+            progress = ((i + 1) / num_chunks) * 100
+            logging.debug(f"Chunk {i + 1} of {num_chunks} processed ({progress:.2f}% complete)")
 
-    # Assign the results to the grid DataFrame
-    self.grid_df['is_land'] = is_land_series
-    self.grid_df['is_water'] = ~is_land_series
+        # Assign the results to the grid DataFrame
+        self.grid_df['is_land'] = is_land_series
+        self.grid_df['is_water'] = ~is_land_series
 
     def save_grid(self, file_name, folder_path):
         logging.debug("Saving grid to file...")
