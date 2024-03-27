@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ship Selection</title>
+  <style>
+    .ship-container {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 50px;
+    }
+
+    .ship {
+      border: 2px solid #000;
+      padding: 10px;
+      text-align: center;
+      position: relative;
+    }
+
+    .ship-description {
+      opacity: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      white-space: nowrap;
+      overflow: hidden;
+      width: 0;
+      animation: typewriter 2s steps(30) forwards;
+    }
+
+    @keyframes typewriter {
+      from {
+        width: 0;
+      }
+      to {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Ship Selection</h1>
+  <div class="ship-container">
+    <div class="ship">
+      <img src="cargo_ship.jpg" alt="Cargo Ship">
+      <h3>Cargo Ship</h3>
+      <p class="ship-description">Specifications of Cargo Ship...</p>
+    </div>
+    <div class="ship">
+      <img src="crude_tanker_ship.jpg" alt="Crude Tanker Ship">
+      <h3>Crude Tanker Ship</h3>
+      <p class="ship-description">Specifications of Crude Tanker Ship...</p>
+    </div>
+    <div class="ship">
+      <img src="ro_ro_ship.jpg" alt="Ro-Ro Ship">
+      <h3>Ro-Ro Ship</h3>
+      <p class="ship-description">Specifications of Ro-Ro Ship...</p>
+    </div>
+  </div>
+
+  <script>
+    const ships = document.querySelectorAll('.ship');
+
+    ships.forEach(ship => {
+      const description = ship.querySelector('.ship-description');
+
+      ship.addEventListener('mouseenter', () => {
+        description.style.opacity = '1';
+      });
+
+      ship.addEventListener('mouseleave', () => {
+        description.style.opacity = '0';
+      });
+    });
+  </script>
+</body>
+</html>
