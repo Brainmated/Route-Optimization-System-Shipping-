@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.urls import reverse
 from .forms import SignUpForm
-from .pathing import a_star, dijkstra, G
+from .pathing import a_star, dijkstra
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 import folium
@@ -14,6 +14,7 @@ import random
 import requests
 import json
 from .ports import parse_ports
+from .graph_update import generate_or_load_graph, write_isolated_nodes_to_file, file_path, graph_file_path
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import numpy as np
@@ -27,10 +28,11 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return render(request, "debug")
+            return redirect('debug')
         
         else:
-            return render(request, "login")
+            return render(request, "login.html", {'error_message': 'Invalid user credentials.'})
+    return render(request, 'login.html')
         
 
 # Logout view
@@ -169,3 +171,46 @@ def simulate(request):
 
     # Pass the new map to the template
     return render(request, 'debug.html', context)
+
+def blocks_view(request):
+    # Load your graph, this assumes your generate_or_load_graph returns a graph object
+    G = generate_or_load_graph(file_path, graph_file_path)
+    
+    # Get the block data
+    block_counts = write_isolated_nodes_to_file(G)
+
+    m = folium.Map(location=[0, 0], zoom_start=13)
+
+    # Use block_counts to draw rectangles on the map
+    for block, count in block_counts.items():
+        if count > 0:  # Only draw blocks with isolated nodes
+            lat_start, lon_start = block
+            lat_end = lat_start + 1  # Adjust based on your block size
+            lon_end = lon_start + 1  # Adjust based on your block size
+
+            # Define the block bounds
+            bounds = [[lat_start, lon_start], [lat_end, lon_end]]
+
+            # Create a rectangle for the block
+            folium.Rectangle(
+                bounds,
+                popup=f"Isolated Nodes: {count}",
+                color='#ff7800',
+                fill=True,
+                fill_color='#ffff00',
+                fill_opacity=0.2
+            ).add_to(m)
+            
+    block_counts = write_isolated_nodes_to_file(G, write_to_file=False)
+    # Render the map as HTML
+    map_html = m._repr_html_()
+
+    # Pass the map HTML to the template
+    context = {'map': map_html}
+    return render(request, 'blocks.html', context)
+
+def ships_view(request):
+    if request.method == "POST":
+        selected_ship = request.POST.get("ship")
+
+    return render(request, "ships.html")
