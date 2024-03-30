@@ -21,6 +21,9 @@ graph_file_path = os.path.join(script_dir, 'grid_map', 'sea_graph.pkl')
 debug_print(f"Grid file path: {file_path}")
 path_print = os.path.join(script_dir, 'data')
 
+def find_isolated_nodes(graph):
+    isolated = list(nx.isolates(graph))
+    return isolated
 
 # Haversine formula to calculate the distance between two points on the Earth's surface
 def haversine(coord1, coord2):
@@ -37,32 +40,76 @@ def haversine(coord1, coord2):
 
     return distance
 
+
 def find_nearest_navigable_node_within_radius(graph, point, radius=50.0):
     # Extract the navigable nodes from the graph
-    navigable_nodes = [tuple(node) for node in graph.nodes]
+    navigable_nodes = [node for node in graph.nodes]
 
-    if len(navigable_nodes) == 0:  # Corrected line
+    if len(navigable_nodes) == 0:
         raise ValueError("There are no navigable nodes in the graph to find the closest point to.")
-    # Initialize the closest node and its distance
-    closest_node = None
-    closest_dist = float('inf')
+    
+    # Create the KD-tree from the navigable nodes
+    tree = cKDTree(navigable_nodes)
+    
+    # Find the indices of all points within the specified radius
+    indices = tree.query_ball_point(point, radius)
 
-    # Iterate over all nodes to find the nearest navigable node
-    for node in navigable_nodes:
-        distance = haversine(point, node)
-        if distance < closest_dist and distance <= radius:
-            closest_dist = distance
-            closest_node = node
-
-    if closest_node is not None:
-        return closest_node
-    else:
+    if len(indices) == 0:  # No points found within the radius
+        error_message = f"No navigable nodes within a radius of {radius} km from point {point}."
+        raise ValueError(error_message)
+    
+    # Find the nearest node within the indices
+    nearest_index = tree.query(point, k=1, distance_upper_bound=radius)[1]
+    if nearest_index == len(navigable_nodes):
         error_message = f"No navigable nodes within a radius of {radius} km from point {point}."
         raise ValueError(error_message)
 
-# A* algorithm
-def a_star(graph, start, goal):
+    # Return the nearest navigable node
+    return navigable_nodes[nearest_index]
+
+def log_to_file(message, file_name="debug_log.txt"):
+    with open(file_name, 'a') as f:
+        f.write(message + "\n")
+
+# Define the A* pathfinding function with navigable node checks
+def a_star_pathing(graph, start, goal, radius=50.0):
+    # Check if the start and goal nodes are navigable, if not find the nearest navigable nodes
+    debug_print("A* pathfinding called")
+    if start not in graph:
+        try:
+            start = find_nearest_navigable_node_within_radius(graph, start, radius)
+            log_to_file(f"Changed start node to nearest navigable node: {start}")
+        except ValueError as e:
+            log_to_file(str(e))
+            return None
+
+    if goal not in graph:
+        try:
+            goal = find_nearest_navigable_node_within_radius(graph, goal, radius)
+            log_to_file(f"Changed goal node to nearest navigable node: {goal}")
+        except ValueError as e:
+            log_to_file(str(e))
+            return None
+    # Here is where you would add the connectivity check
+    if not nx.has_path(graph, start, goal):
+        debug_print("Start and goal are not connected in the graph.")
+        # Handle the case where there is no path, possibly by exiting the function
+        return None
+    # Attempt to find the A* path
     try:
+        path = nx.astar_path(graph, start, goal, heuristic=haversine)
+        return path
+    except nx.NetworkXNoPath:
+        log_to_file("No path exists between the provided start and goal nodes.")
+        return None
+    except nx.NodeNotFound as e:
+        log_to_file(str(e))
+        return None
+
+# Dijkstra's algorithm
+def dijkstra(graph, start, goal, debug_file="dijkstra_debug.txt"):
+    try:
+        # Find the nearest navigable nodes to the start and goal
         start = find_nearest_navigable_node_within_radius(graph, start)
         goal = find_nearest_navigable_node_within_radius(graph, goal)
     except ValueError as e:
@@ -81,25 +128,28 @@ def a_star(graph, start, goal):
     frontier.put((0, start))
     came_from = {start: None}
     cost_so_far = {start: 0}
-
+    
     while not frontier.empty():
         current = frontier.get()[1]
-
-        print(f"Current node: {current}")  # Debug current node
+        
+        log_to_file(f"Current node: {current}", debug_file)  # Log current node to file
+        
         if current == goal:
-            print("Goal reached.")
+            log_to_file("Goal reached.", debug_file)
             break
-
+        
         for neighbor in graph.neighbors(current):
-            new_cost = cost_so_far[current] + haversine(current, neighbor)
-            if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
-                cost_so_far[neighbor] = new_cost
-                priority = new_cost + haversine(neighbor, goal)
-                frontier.put((priority, neighbor))
-                came_from[neighbor] = current
-                print(f"Neighbor {neighbor} added to frontier with priority {priority}.")  # Debug neighbor
+            if graph.nodes[neighbor].get('navigable', True):  # Check if the neighbor is navigable
+                new_cost = cost_so_far[current] + haversine(current, neighbor)
+                if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                    cost_so_far[neighbor] = new_cost
+                    priority = new_cost  # Priority is just the cost for Dijkstra
+                    frontier.put((priority, neighbor))
+                    came_from[neighbor] = current
+                    log_to_file(f"Neighbor {neighbor} added to frontier with priority {priority}.", debug_file)  # Log neighbor
 
     if goal in came_from:
+        # Reconstruct path
         current = goal
         path = []
         while current != start:
@@ -107,49 +157,16 @@ def a_star(graph, start, goal):
             current = came_from[current]
         path.append(start)
         path.reverse()
-        print(f"Path found: {path}")  # Debug final path
+        
+        print(f"Path found: {path}", debug_file)
         return path
     else:
-        print("Path not found.")
+        print("Path not found.", debug_file)
         return None
 
-# Dijkstra's algorithm
-def dijkstra(graph, start, goal):
-
-    start = find_nearest_navigable_node_within_radius(graph, start)
-    goal = find_nearest_navigable_node_within_radius(graph, goal)
-
-    frontier = PriorityQueue()
-    frontier.put((0, start))
-    came_from = {start: None}
-    cost_so_far = {start: 0}
-    
-    while not frontier.empty():
-        current = frontier.get()[1]
-        
-        if current == goal:
-            break
-        
-        for neighbor in graph.neighbors(current):
-            new_cost = cost_so_far[current] + haversine(current, neighbor)
-            if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
-                cost_so_far[neighbor] = new_cost
-                frontier.put((new_cost, neighbor))
-                came_from[neighbor] = current
-    
-    # Reconstruct path
-    current = goal
-    path = []
-    while current != start:
-        path.append(current)
-        current = came_from[current]
-    path.append(start)
-    path.reverse()
-    return path
-
-def write_path_to_file(path_print, path_file_name):
+def write_path_to_file(path, path_file_name):
     with open(path_file_name, 'w') as file:
-        for node in path_file_name:
+        for node in path:
             file.write(f"{node[0]},{node[1]}\n")
 
 '''
@@ -240,32 +257,32 @@ def calculate_fuel_consumption_and_cost(path, fuel_efficiency, gas_price):
     return total_fuel_consumption, total_cost
 '''
 
-try:
-    G = generate_or_load_graph(file_path, graph_file_path)
+if __name__ == "__main__":
+    try:
+        G = generate_or_load_graph(file_path, graph_file_path)  # Assuming this function is defined
+        debug_print(f"Graph has {len(G.nodes)} nodes and {len(G.edges)} edges")
 
-    # Define start and goal coordinates
-    start_coord = (40.68, -74.01)  # Example: New York City
-    goal_coord = (-10.26, 40.13)  
-
-    debug_print("Finding nearest navigable start node...")
-    start_node = find_nearest_navigable_node_within_radius(G, start_coord)
-    debug_print(f"Start node found: {start_node}")
-
-    debug_print("Finding nearest navigable goal node...")
-    goal_node = find_nearest_navigable_node_within_radius(G, goal_coord)
-    debug_print(f"Goal node found: {goal_node}")
-
-    if start_node is None or goal_node is None:
-        debug_print("Navigation issue: Start node or goal node could not be found.")
-    else:
-        debug_print(f"Starting A* algorithm from {start_node} to {goal_node}...")
-        path = a_star(G, start_node, goal_node)
-        
-        if path is not None:
-            debug_print("Path found:")
-            for node in path:
-                debug_print(node)
+        isolated_nodes = find_isolated_nodes(G)
+        if isolated_nodes:
+            log_to_file(f"Isolated nodes found: {len(isolated_nodes)}")
+            # Optionally log the isolated nodes or handle them differently here
+            for node in isolated_nodes:
+                log_to_file(str(node))
         else:
-            debug_print("No path could be found from start to goal with the given parameters.")
-except Exception as e:
-    debug_print(f"An error occurred: {e}")
+            debug_print("No isolated nodes found in the graph.")
+
+        # Define start and goal coordinates
+        start_coord = (40.68, -74.01)  # Replace with actual start coordinates
+        goal_coord = (-10.26, 40.13)   # Replace with actual goal coordinates
+
+        log_to_file(f"Starting A* algorithm from {start_coord} to {goal_coord}...")
+        path = a_star_pathing(G, start_coord, goal_coord)
+
+        if path is not None:
+            log_to_file("Path found:")
+            for node in path:
+                log_to_file(str(node))
+        else:
+            log_to_file("No path could be found from start to goal with the given parameters.")
+    except Exception as e:
+        log_to_file(f"An error occurred: {e}")
