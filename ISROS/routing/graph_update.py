@@ -4,7 +4,10 @@ import networkx as nx
 import pandas as pd
 import numpy as np
 import gc
+from scipy.spatial import cKDTree
 import math
+from math import radians
+from itertools import islice
 
 from sklearn.neighbors import BallTree
 
@@ -35,31 +38,30 @@ def haversine(lat1, lon1, lat2, lon2):
     # Calculate the result
     return c * r
 
-def add_edges_knn(G, nodes, step_size=0.05, batch_size=100):
-    # Convert latitude and longitude to radians for BallTree
-    nodes_rad = np.radians(nodes)
-    tree = BallTree(nodes_rad, metric='haversine')
-
-    # Calculate the step size in radians and then multiply by Earth's radius to get kilometers
-    step_size_km = np.radians(step_size) * 6371
-
-    # Perform batch query of the BallTree for neighbors within step_size_km
-    for i in range(0, len(nodes), batch_size):
-        gc.collect()
-        # Find the distances and indices of neighbors within step_size_km for the batch
-        distances, indices = tree.query_radius(nodes_rad[i:i + batch_size], r=step_size_km, return_distance=True)
-
-        # Iterate through each node and its neighbors
-        for j, neighbors in enumerate(indices):
-            node_idx = i + j  # Actual index of the node
-            node = nodes[node_idx]
-            for neighbor_idx, distance in zip(neighbors, distances[j]):
-                if neighbor_idx != node_idx:  # Skip the node itself
-                    neighbor = nodes[neighbor_idx]  # Define neighbor
-                    # Check if the neighbors are not at the extreme opposite sides
-                    if not (abs(node[0] - neighbor[0]) > 180 or abs(node[1] - neighbor[1]) > 360):
-                        # Add an edge to the graph with distance as weight
-                        G.add_edge(node, neighbor, weight=distance)
+def add_edges_with_kdtree(G, nodes, node_spacing, batch_size=100):
+    earth_radius_km = 6371.0
+    distance_threshold_km = node_spacing * math.sqrt(2) * (math.pi / 180) * earth_radius_km
+    
+    tree = cKDTree(nodes)
+    
+    # Calculate the number of batches needed
+    num_batches = int(math.ceil(len(nodes) / batch_size))
+    
+    # Process each batch
+    for batch_start in range(0, len(nodes), batch_size):
+        batch_end = min(batch_start + batch_size, len(nodes))
+        current_batch = nodes[batch_start:batch_end]
+        
+        # Iterate through each node in the batch and find its neighbors
+        for idx, node in enumerate(current_batch):
+            global_idx = batch_start + idx  # Global index of the node in the 'nodes' list
+            neighbors = tree.query_ball_point(node, distance_threshold_km)
+            
+            # Add edges to the graph
+            for neighbor_idx in neighbors:
+                if neighbor_idx > global_idx:  # Avoid adding an edge twice
+                    neighbor_node = nodes[neighbor_idx]
+                    G.add_edge(global_idx, neighbor_idx)
 
 def generate_or_load_graph(file_path, graph_file):
     if os.path.isfile(graph_file):
@@ -74,18 +76,17 @@ def generate_or_load_graph(file_path, graph_file):
 
         sea_grid = pd.read_pickle(file_path)
         water_grid = sea_grid[sea_grid['is_water'] == 1]
+        step_size = 0.05
 
-        # Add all nodes in a batch
+        # Add all nodes in batches of 1000
         nodes = [(row['latitude'], row['longitude']) for index, row in water_grid.iterrows()]
-        G.add_nodes_from(nodes)
+        batch_size = 1000
+        for i in range(0, len(nodes), batch_size):
+            batch_nodes = nodes[i:i + batch_size]
+            G.add_nodes_from(batch_nodes)
 
-        # Add all edges in a batch
-        add_edges_knn(G, nodes, step_size=0.05, batch_size=100)
-
-        # Check graph connectivity after nodes and edges have been added
-        if not check_graph_connectivity(G):
-            # If the graph is not connected, write isolated nodes to a file
-            write_isolated_nodes_to_file(G)
+        # Add edges with batch processing
+        add_edges_with_kdtree(G, nodes, node_spacing=step_size, batch_size=100)
 
         print(f"Graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
 
@@ -162,78 +163,35 @@ def write_isolated_nodes_to_file(graph, output_file="isolated_nodes.txt", checkp
     
     return block_counts
 
-def find_and_print_closest_neighbors(nodes, start_coord, k=10):
-    # Convert latitude and longitude to radians for BallTree
-    nodes_rad = np.radians(nodes)
-    start_coord_rad = np.radians([start_coord])
-    
-    # Create a BallTree with the nodes
-    tree = BallTree(nodes_rad, metric='haversine')
+def interpolate_points(start, end, num_points):
+    """Generate interpolated points between start and end coordinates."""
+    latitudes = np.linspace(start[0], end[0], num_points)
+    longitudes = np.linspace(start[1], end[1], num_points)
+    return zip(latitudes, longitudes)
 
-    # Query the tree for the k nearest neighbors to start_coord
-    distances, indices = tree.query(start_coord_rad, k+1)  # k+1 because the point itself may be included
 
-    # Print the k nearest neighbors, skipping the first if it is the start_coord itself
-    for i, index in enumerate(indices[0]):
-        # Skip if the first point is the same as the start_coord
-        if distances[0][i] == 0:
-            continue
-        neighbor = nodes[index]
-        distance_km = distances[0][i] * 6371  # Convert from radians to kilometers
-        direction = get_cardinal_direction(start_coord[0], start_coord[1], neighbor[0], neighbor[1])
-        print(f"Neighbor {i}: {neighbor}, Distance: {distance_km:.2f} km, Direction: {direction}")
-
-def get_cardinal_direction(start_lat, start_lon, end_lat, end_lon):
-    lat_diff = end_lat - start_lat
-    lon_diff = end_lon - start_lon
-
-    if lat_diff > 0 and lon_diff > 0:
-        return 'NE'
-    elif lat_diff < 0 and lon_diff > 0:
-        return 'SE'
-    elif lat_diff < 0 and lon_diff < 0:
-        return 'SW'
-    elif lat_diff > 0 and lon_diff < 0:
-        return 'NW'
-    elif lat_diff == 0 and lon_diff > 0:
-        return 'E'
-    elif lat_diff == 0 and lon_diff < 0:
-        return 'W'
-    elif lat_diff > 0 and lon_diff == 0:
-        return 'N'
-    elif lat_diff < 0 and lon_diff == 0:
-        return 'S'
-    else:
-        return 'Origin'
-
-def interpolate_coordinates(start_coord, goal_coord, num_points=100):
-    x_coords = [start_coord[0] + i * (goal_coord[0] - start_coord[0]) / (num_points - 1) for i in range(num_points)]
-    y_coords = [start_coord[1] + i * (goal_coord[1] - start_coord[1]) / (num_points - 1) for i in range(num_points)]
-    return list(zip(x_coords, y_coords))
-
-# The script's execution part, if needed:
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(script_dir, 'grid_map', 'sea_grid.pkl')
     graph_file_path = os.path.join(script_dir, 'grid_map', 'sea_graph.pkl')
 
+    # Generate the graph with nodes and edges, or load from file if already generated
     G = generate_or_load_graph(file_path, graph_file_path)
-    nodes = list(G.nodes)
-    add_edges_knn(G, nodes, step_size=0.05)
-    #find_and_print_closest_neighbors(nodes, start_coord, k=20)
-    #find_and_print_closest_neighbors(nodes, goal_coord, k=20)
-    #write_isolated_nodes_to_file(G)
 
-    '''
-    # Interpolate the coordinates
-    interpolated_coords = interpolate_coordinates(start_coord, goal_coord)
-
-    # Write the coordinates to a file
-    coord_paths_file_path = os.path.join(script_dir, 'coord_paths.txt')
-    with open(coord_paths_file_path, 'w') as file:
-        for coord in interpolated_coords:
-            file.write(f"{coord}\n")
+    # Check if the graph is connected
+    connected = check_graph_connectivity(G)
     
-    print(f"Interpolated coordinates have been written to {coord_paths_file_path}")
-    '''
-__all__ = ['generate_or_load_graph', 'write_isolated_nodes_to_file', 'file_path', 'graph_file_path']
+    # If the graph is not connected, find isolated nodes
+    if not connected:
+        # Optionally specify the output file and checkpoint file paths
+        output_file_path = os.path.join(script_dir, 'data', 'isolated_nodes.txt')
+        checkpoint_file_path = os.path.join(script_dir, 'data', 'checkpoint.txt')
+        start_point = (40.68, -74.01)
+        end_point = (40.27, -10.32)
+        output_file_path = os.path.join(script_dir, 'neighbors_info.txt')
+        # Find isolated nodes and write to file
+        write_isolated_nodes_to_file(G, output_file=output_file_path, checkpoint_file=checkpoint_file_path)
+
+        # If there are no isolated nodes, check for and handle multiple connected components
+        num_connected_components = nx.number_connected_components(G)
+        print(f"There are {num_connected_components} connected components in the graph.")
