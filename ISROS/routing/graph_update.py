@@ -38,32 +38,31 @@ def haversine(lat1, lon1, lat2, lon2):
     # Calculate the result
     return c * r
 
-def add_edges_with_kdtree(G, nodes, node_spacing, batch_size=1000):
-    earth_radius_km = 6371.0
-    distance_threshold_km = node_spacing * math.sqrt(2) * (math.pi / 180) * earth_radius_km
-    
-    tree = cKDTree(nodes)
-    
-    # Calculate the number of batches needed
-    num_batches = int(math.ceil(len(nodes) / batch_size))
-    
-    # Process each batch
-    for batch_start in range(0, len(nodes), batch_size):
-        batch_end = min(batch_start + batch_size, len(nodes))
-        current_batch = nodes[batch_start:batch_end]
-        
-        # Iterate through each node in the batch and find its neighbors
-        for idx, node in enumerate(current_batch):
-            global_idx = batch_start + idx  # Global index of the node in the 'nodes' list
-            neighbors = tree.query_ball_point(node, distance_threshold_km)
-            
-            # Add edges to the graph
-            for neighbor_idx in neighbors:
-                if neighbor_idx > global_idx:  # Avoid adding an edge twice
-                    neighbor_node = nodes[neighbor_idx]
-                    G.add_edge(global_idx, neighbor_idx)
+def add_edges_knn(G, nodes, k, batch_size=1000, progress_callback=None):
+    nodes_rad = np.radians(nodes)
+    tree = BallTree(nodes_rad, metric='haversine')
 
-def generate_or_load_graph(file_path, graph_file):
+    num_nodes = len(nodes)
+
+    for i in range(0, num_nodes, batch_size):
+        if progress_callback is not None:
+            progress_callback(i, num_nodes)  # Call the progress callback function
+
+        distances, indices = tree.query(nodes_rad[i:i + batch_size], k + 1)
+
+        for j, neighbors in enumerate(indices):
+            node_idx = i + j
+            node = nodes[node_idx]
+            for neighbor_idx in neighbors[1:]:
+                neighbor = nodes[neighbor_idx]
+                G.add_edge(node, neighbor)
+
+def generate_or_load_graph(file_path, graph_file, k_neighbors=5):
+
+    def report_progress(current_index, total_nodes):
+        progress = (current_index / total_nodes) * 100
+        print(f"Processing nodes: {progress:.2f}% complete.")
+
     if os.path.isfile(graph_file):
         print(f"Graph file found at {graph_file}. Loading graph...")
         with open(graph_file, 'rb') as file:
@@ -76,19 +75,11 @@ def generate_or_load_graph(file_path, graph_file):
 
         sea_grid = pd.read_pickle(file_path)
         water_grid = sea_grid[sea_grid['is_water'] == 1]
-        step_size = 0.05
 
-        # Add all nodes in batches of 1000
-        # Using a list to store all nodes for edge creation
-        nodes = [(row['latitude'], row['longitude']) for _, row in water_grid.iterrows()]
-        batch_size = 1000
-        for batch_nodes in iter(lambda: list(islice(iter(nodes), batch_size)), []):
-            G.add_nodes_from(batch_nodes)
-            # No need to delete batch_nodes or call gc.collect() here
-            # as batch_nodes will be naturally cleaned up by Python's garbage collector
+        nodes = [(row['latitude'], row['longitude']) for index, row in water_grid.iterrows()]
+        G.add_nodes_from(nodes)
 
-        # Add edges with batch processing
-        add_edges_with_kdtree(G, nodes, node_spacing=step_size, batch_size=1000)
+        add_edges_knn(G, nodes, k=k_neighbors, batch_size=1000, progress_callback=report_progress)
 
         print(f"Graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
 
