@@ -38,7 +38,7 @@ def haversine(lat1, lon1, lat2, lon2):
     # Calculate the result
     return c * r
 
-def add_edges_with_kdtree(G, nodes, node_spacing, batch_size=100):
+def add_edges_with_kdtree(G, nodes, node_spacing, batch_size=1000):
     earth_radius_km = 6371.0
     distance_threshold_km = node_spacing * math.sqrt(2) * (math.pi / 180) * earth_radius_km
     
@@ -79,14 +79,16 @@ def generate_or_load_graph(file_path, graph_file):
         step_size = 0.05
 
         # Add all nodes in batches of 1000
-        nodes = [(row['latitude'], row['longitude']) for index, row in water_grid.iterrows()]
+        # Using a list to store all nodes for edge creation
+        nodes = [(row['latitude'], row['longitude']) for _, row in water_grid.iterrows()]
         batch_size = 1000
-        for i in range(0, len(nodes), batch_size):
-            batch_nodes = nodes[i:i + batch_size]
+        for batch_nodes in iter(lambda: list(islice(iter(nodes), batch_size)), []):
             G.add_nodes_from(batch_nodes)
+            # No need to delete batch_nodes or call gc.collect() here
+            # as batch_nodes will be naturally cleaned up by Python's garbage collector
 
         # Add edges with batch processing
-        add_edges_with_kdtree(G, nodes, node_spacing=step_size, batch_size=100)
+        add_edges_with_kdtree(G, nodes, node_spacing=step_size, batch_size=1000)
 
         print(f"Graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
 
