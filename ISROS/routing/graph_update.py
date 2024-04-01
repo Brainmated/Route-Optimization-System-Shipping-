@@ -57,7 +57,7 @@ def add_edges_knn(G, nodes, k, batch_size=1000, progress_callback=None):
                 neighbor = nodes[neighbor_idx]
                 G.add_edge(node, neighbor)
 
-def generate_or_load_graph(file_path, graph_file, k_neighbors=5):
+def generate_or_load_graph(file_path, graph_file, k_neighbors=8):
 
     def report_progress(current_index, total_nodes):
         progress = (current_index / total_nodes) * 100
@@ -162,7 +162,7 @@ def interpolate_points(start, end, num_points):
     longitudes = np.linspace(start[1], end[1], num_points)
     return zip(latitudes, longitudes)
 
-
+'''
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(script_dir, 'grid_map', 'sea_grid.pkl')
@@ -188,3 +188,4 @@ if __name__ == "__main__":
         # If there are no isolated nodes, check for and handle multiple connected components
         num_connected_components = nx.number_connected_components(G)
         print(f"There are {num_connected_components} connected components in the graph.")
+'''
