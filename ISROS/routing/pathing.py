@@ -8,7 +8,7 @@ import networkx as nx
 from queue import PriorityQueue
 from scipy.spatial import cKDTree
 from datetime import datetime, timedelta
-from graph_update import generate_or_load_graph
+from .graph_update import generate_or_load_graph
 
 def debug_print(message):
     print(f"DEBUG: {message}")
@@ -71,10 +71,10 @@ def log_to_file(message, file_name="debug_log.txt"):
     with open(file_name, 'a') as f:
         f.write(message + "\n")
 
-# Define the A* pathfinding function with navigable node checks
 def a_star_pathing(graph, start, goal, radius=50.0):
+    log_to_file("A* pathfinding called")
+    
     # Check if the start and goal nodes are navigable, if not find the nearest navigable nodes
-    debug_print("A* pathfinding called")
     if start not in graph:
         try:
             start = find_nearest_navigable_node_within_radius(graph, start, radius)
@@ -90,14 +90,17 @@ def a_star_pathing(graph, start, goal, radius=50.0):
         except ValueError as e:
             log_to_file(str(e))
             return None
-    # Here is where you would add the connectivity check
+
     if not nx.has_path(graph, start, goal):
-        debug_print("Start and goal are not connected in the graph.")
-        # Handle the case where there is no path, possibly by exiting the function
+        log_to_file("Start and goal are not connected in the graph.")
         return None
+
     # Attempt to find the A* path
     try:
         path = nx.astar_path(graph, start, goal, heuristic=haversine)
+        log_to_file("Path found:")
+        for node in path:
+            log_to_file(str(node))
         return path
     except nx.NetworkXNoPath:
         log_to_file("No path exists between the provided start and goal nodes.")
@@ -168,6 +171,13 @@ def write_path_to_file(path, path_file_name):
     with open(path_file_name, 'w') as file:
         for node in path:
             file.write(f"{node[0]},{node[1]}\n")
+
+def calculate_distance(path):
+    total_distance = 0
+    for i in range(len(path) - 1):
+        distance = haversine(path[i], path[i+1])
+        total_distance += distance
+    log_to_file(f"Total distance: {total_distance:.2f} km")
 
 '''
 def calculate_travel_time(graph, path, average_speed_kmh, start_datetime):
@@ -256,7 +266,9 @@ def calculate_fuel_consumption_and_cost(path, fuel_efficiency, gas_price):
 
     return total_fuel_consumption, total_cost
 '''
-
+G = generate_or_load_graph(file_path, graph_file_path)
+print(f"Graph loaded.")
+'''
 if __name__ == "__main__":
     try:
         G = generate_or_load_graph(file_path, graph_file_path)  # Assuming this function is defined
@@ -282,7 +294,9 @@ if __name__ == "__main__":
             log_to_file("Path found:")
             for node in path:
                 log_to_file(str(node))
+            calculate_distance(path)
         else:
             log_to_file("No path could be found from start to goal with the given parameters.")
     except Exception as e:
         log_to_file(f"An error occurred: {e}")
+'''
