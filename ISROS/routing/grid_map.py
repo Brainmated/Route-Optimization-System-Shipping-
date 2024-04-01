@@ -6,9 +6,11 @@ import pickle
 import logging
 import numpy as np
 from multiprocessing import Pool
+from shapely.ops import unary_union
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 class GridMap:
     def __init__(self, land_data_path, lat_min, lat_max, lon_min, lon_max, lat_step, lon_step):
@@ -39,6 +41,18 @@ class GridMap:
         num_chunks = (total_points // chunk_size) + 1
         logging.debug(f"Classifying land and water in {num_chunks} chunks...")
 
+        # Project land geometries to a CRS that uses meters (e.g., World Mercator)
+        land_meters = self.land.to_crs(epsg=3395)
+
+        # Apply a 20km buffer
+        buffered_land = land_meters.geometry.buffer(20000)
+        
+        # Merge all land geometries into a single geometry for faster spatial join
+        merged_land = unary_union(buffered_land)
+        
+        # Re-project back to the original CRS (EPSG:4326)
+        merged_land = gpd.GeoSeries([merged_land], crs=land_meters.crs).to_crs(epsg=4326)
+
         # Initialize an empty Series to store results
         is_land_series = pd.Series(False, index=self.grid_df.index)
 
@@ -48,11 +62,11 @@ class GridMap:
             end_idx = start_idx + chunk_size
             current_chunk = self.grid_df.iloc[start_idx:end_idx]
 
-            # Perform the spatial join with the current chunk
-            points_within_land = gpd.sjoin(current_chunk, self.land, how='inner', predicate='intersects')
+            # Perform the spatial join with the single merged land geometry
+            points_within_buffered_land = current_chunk[current_chunk.geometry.within(merged_land.iloc[0])]
 
             # Update the is_land Series with the results
-            is_land_series.loc[points_within_land.index] = True
+            is_land_series.loc[points_within_buffered_land.index] = True
 
             # Report progress
             progress = ((i + 1) / num_chunks) * 100
@@ -73,12 +87,13 @@ class GridMap:
             pickle.dump(self.grid_df, file, pickle.HIGHEST_PROTOCOL)
         logging.debug("Grid saved to: {}".format(file_path))
 
+'''
 # Usage:
 if __name__ == "__main__":
     LAT_STEP, LON_STEP = 0.05, 0.05
     LAT_MIN, LAT_MAX = -60, 83
     LON_MIN, LON_MAX = -180, 180
-    land_data_path = "data/geopackages/ne_10m_land.gpkg"
+    land_data_path = os.path.join(script_dir, 'data', 'geopackages', 'ne_10m_land.gpkg')
 
     logging.debug("Starting program...")
     grid_map = GridMap(land_data_path, LAT_MIN, LAT_MAX, LON_MIN, LON_MAX, LAT_STEP, LON_STEP)
@@ -88,3 +103,4 @@ if __name__ == "__main__":
 
     grid_map.save_grid('sea_grid.pkl', 'grid_map')
     logging.debug("Program finished.")
+'''
