@@ -11,7 +11,23 @@
     <div id="map" class="map-container">
         {{ map_html|safe }}
         {% if not simulation_run %}
-        <div id="input-box" class="input-container">
+        <div class="overlay">
+            <div class="ship-container">
+              <div class="container.ship">
+                <img src="{% static 'container.jpg' %}" alt="Cargo Container">
+                <p>Cargo Container</p>
+              </div>
+              <div class="container.ship">
+                <img src="{% static 'ro ro.jpg' %}" alt="Ro Ro Container">
+                <p>Ro Ro Container</p>
+              </div>
+              <div class="container.ship">
+                <img src="{% static 'tanker.jpg' %}" alt="Crude Oil Tanker">
+                <p>Crude Oil Tanker</p>
+              </div>
+            </div>
+          </div>
+            <div class="overlay"></div> <!-- Add overlay div -->
             <form method="post" action="{% url 'simulate' %}">
                 {% csrf_token %}
                 <div class="dropdown-container">
