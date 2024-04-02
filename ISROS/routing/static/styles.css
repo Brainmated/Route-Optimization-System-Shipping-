@@ -4,6 +4,7 @@ body {
   margin: 0;
   display: flex;
   justify-content: center;
+  overflow: hidden;
   align-items: center;
   background-color: #f2f2f2;
 }
@@ -28,42 +29,10 @@ body {
   text-align: center; /* Centers the content inside the container */
 }
 
-.typewriter {
-  display: inline-block; /* Ensures the text container doesn't expand */
-  overflow: hidden; /* Ensures the text doesn't overflow */
-  white-space: pre-line; /* Allows line breaks */
-  border-right: 0.15em solid #000; /* Creates the blinking cursor effect */
-  animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
-}
-
-@keyframes typing {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
-}
-
-@keyframes blink-caret {
-  from,
-  to {
-    border-color: transparent;
-  }
-  50% {
-    border-color: #000;
-  }
-}
-
 h1 {
   text-align: center;
   color: #333;
   margin-bottom: 20px;
-}
-  
-form {
-  display: flex;
-  flex-direction: column;
 }
 
 label {
@@ -111,54 +80,6 @@ button[type="submit"]:hover {
   position: relative;
 }
 
-.overlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  height: 90%;
-  background-color: rgba(64, 224, 208, 0.5); /* Soft turquoise with transparency */
-  backdrop-filter: blur(8px); /* Apply a blur effect */
-  z-index: 2; /* Decrease the z-index to move the overlay behind the containers */
-}
-
-.ship-container {
-  position: fixed; /* Change position to fixed */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 80%;
-  z-index: 100; /* Increase the z-index to bring the containers in front of the overlay */
-}
-
-.ship-container .container {
-  text-align: center;
-}
-
-.ship-container .container img {
-  width: 200px; /* Adjust the width as needed */
-  height: auto;
-}
-
-.ship-container .container p {
-  margin-top: 10px;
-}
-
-
-#info-box,
-#input-box {
-  position: absolute;
-  width: 23%;
-  background: rgba(255, 255, 255, 0.4); /* Semi-transparent white */
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 30;
-}
-
 #info-box {
   bottom: 250px; /* Distance from the bottom */
   left: 100px; /* Distance from the left */
@@ -166,9 +87,76 @@ button[type="submit"]:hover {
 }
 
 #input-box {
+  position: absolute;
   top: 100px; /* Distance from the top */
-  left: 100px; /* Distance from the left */
-  height: auto; /* Adjust height automatically based on content */
+  left: 150px; /* Distance from the left */
+  width: 300px; /* Fixed width for the smaller container */
+  max-width: 300px; /* Ensuring that it doesn't get wider than 300px */
+  padding: 10px; /* Padding inside the box */
+  background-color: rgba(242, 242, 242, 0.6); /* Slightly transparent background */
+  border-radius: 5px;
+  z-index: 2; /* High enough z-index to be on top */
+  box-sizing: border-box; /* Include padding and border in the width and height */
+}
+
+.overlay {
+  position: fixed; /* Use fixed to cover the entire viewport */
+  top: 5%; /* To cover 90%, we center with 5% from the top and bottom */
+  left: 5%; /* To cover 90%, we center with 5% from the left and right */
+  right: 5%;
+  bottom: 5%;
+  background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black background */
+  display: flex;
+  justify-content: center; /* Center children horizontally */
+  align-items: center; /* Center children vertically */
+  z-index: 10; /* Ensure it's above other content */
+}
+
+.vessel-container {
+  display: inline-flex; 
+  flex-direction: column; /* Stack children vertically */
+  align-items: center; /* Center children horizontally */
+  margin: 0 20px; /* Add some horizontal margin between containers */
+  width: 400px; /* Fixed width for each container */
+}
+
+.vessel {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.vessel img {
+  width: 100%;
+  height: auto; /* Maintain aspect ratio */
+}
+
+.vessel-container img {
+  position: relative;
+  width: 100%; /* Use 100% width of the parent container */
+  height: auto; /* Maintain aspect ratio */
+}
+
+.vessel-label {
+  color: white;
+  margin-bottom: 10px; /* Space between label and image */
+}
+
+.typewriter-text {
+  display: block;
+  visibility: hidden;
+  width: 100%;
+  color: white;
+  text-align: center; /* Center the text below the vessel */
+  font-family: 'Courier New', Courier, monospace; /* Typewriter-style font */
+  overflow: hidden; /* Hide overflow text */
+  padding-top: 10px; /* Add some space between the vessel image and the text */
+  border-right: .15em solid orange; /* The cursor */
+  animation: blink-caret .75s step-end infinite; /* Cursor blinking effect */
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: orange; }
 }
 
 .add-location {
@@ -181,16 +169,10 @@ button {
   margin-top: 10px;
 }
 
-.input-container {
-  display: flex;
-  justify-content: start;
-  gap: 20px;
-}
-
 .dropdown-container {
   display: flex;
   flex-direction: column;
-  margin-right: 20px;
+  margin-right: 10px;
 }
 
 .dropdown-container:last-child {
@@ -205,8 +187,4 @@ button {
 
 .location-dropdown {
   flex-basis: 50%;
-}
-
-.map-container {
-  height: 10vh; /* Assign a height that is half the viewport height */
 }
