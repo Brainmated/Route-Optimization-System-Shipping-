@@ -8,7 +8,9 @@ import networkx as nx
 from queue import PriorityQueue
 from scipy.spatial import cKDTree
 from datetime import datetime, timedelta
+from .ships import Ship, ContainerCargoShip, CrudeOilTankerShip, RoRoShip
 from .graph_update import generate_or_load_graph
+#from graph_update import generate_or_load_graph
 
 def debug_print(message):
     print(f"DEBUG: {message}")
@@ -66,6 +68,7 @@ def find_nearest_navigable_node_within_radius(graph, point, radius=50.0):
 
     # Return the nearest navigable node
     return navigable_nodes[nearest_index]
+
 
 def log_to_file(message, file_name="debug_log.txt"):
     with open(file_name, 'a') as f:
@@ -177,97 +180,16 @@ def calculate_distance(path):
     for i in range(len(path) - 1):
         distance = haversine(path[i], path[i+1])
         total_distance += distance
-    log_to_file(f"Total distance: {total_distance:.2f} km")
-
-'''
-def calculate_travel_time(graph, path, average_speed_kmh, start_datetime):
+    distance_str = "{:.2f}".format(total_distance)
+    log_to_file(f"Total distance: {distance_str} km")
+    return distance_str
+''' TRAVEL TIME AND ARRIVAL TIME:-------------------------------------------------------------'''
     
-    # Calculate the total distance by summing the distance between each consecutive pair of nodes
-    total_distance_km = sum(haversine(path[i], path[i+1]) for i in range(len(path) - 1))
-    
-    # Calculate total travel time in hours
-    travel_time_hours = total_distance_km / average_speed_kmh
-
-    # Calculate the arrival datetime
-    arrival_datetime = start_datetime + timedelta(hours=travel_time_hours)
-
-    return travel_time_hours, arrival_datetime
-
-G = generate_or_load_graph(file_path, graph_file_path)
-start_coord = (40.68, -74.01)
-goal_coord = (-10.26, 40.13)
-
-debug_print(f"Starting A* algorithm from {start_coord} to {goal_coord}...")
-'''
-    
-''' For Speed and Time:-------------------------------------------------------------
-# Example usage:
-average_speed_kmh = 30  # Replace with the actual average speed of the vessel
-start_datetime = datetime.strptime('2024-03-21 08:00:00', '%Y-%m-%d %H:%M:%S')  # Specify the start time
-
-# Assuming 'path' is obtained from a_star or dijkstra
-travel_time, arrival_time = calculate_travel_time(G, path, average_speed_kmh, start_datetime)
-
-debug_print(f"Expected travel time: {travel_time:.2f} hours")
-debug_print(f"Estimated arrival time: {arrival_time.strftime('%Y-%m-%d %H:%M:%S')}")
-'''
 
 
-''' Modified Speed with weight:-------------------------------------------------------------
-def calculate_modified_speed(average_speed_kmh, current_load, max_load_capacity, speed_reduction_factor):
-    """
-    Calculate the vessel's modified speed based on its load.
-
-    :param average_speed_kmh: The vessel's average speed when not loaded in kilometers per hour.
-    :param current_load: The current load of the vessel.
-    :param max_load_capacity: The maximum load capacity of the vessel.
-    :param speed_reduction_factor: The reduction factor of the speed per percentage of load.
-    :return: The modified speed of the vessel in kilometers per hour.
-    """
-    if current_load > max_load_capacity:
-        raise ValueError("The current load cannot exceed the maximum load capacity.")
-
-    # Calculate the percentage of the current load
-    load_percentage = current_load / max_load_capacity
-
-    # Calculate the speed reduction based on the load
-    speed_reduction = average_speed_kmh * speed_reduction_factor * load_percentage
-
-    # Calculate the modified speed
-    modified_speed_kmh = average_speed_kmh - speed_reduction
-
-    return modified_speed_kmh
-'''
-
-''' Modified Fuel Cost and Consumption:-------------------------------------------------------------
-def calculate_fuel_consumption_and_cost(path, fuel_efficiency, gas_price):
-    """
-    Calculate the total fuel consumption and cost for a given route.
-
-    :param path: List of tuples representing the (latitude, longitude) coordinates of the route
-    :param fuel_efficiency: Fuel efficiency of the ship in gallons per nautical mile
-    :param gas_price: Current gas price per gallon
-    :return: Tuple containing total fuel consumption in gallons and total cost
-    """
-    total_distance = 0
-    total_fuel_consumption = 0
-    total_cost = 0
-
-    # Calculate the total distance of the path
-    for i in range(len(path) - 1):
-        segment_distance = haversine(path[i], path[i+1])
-        total_distance += segment_distance
-
-    # Calculate the total fuel consumption
-    total_fuel_consumption = total_distance * fuel_efficiency
-
-    # Calculate the total cost
-    total_cost = total_fuel_consumption * gas_price
-
-    return total_fuel_consumption, total_cost
-'''
 G = generate_or_load_graph(file_path, graph_file_path)
 print(f"Graph loaded.")
+
 '''
 if __name__ == "__main__":
     try:
