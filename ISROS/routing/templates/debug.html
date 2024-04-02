@@ -12,22 +12,29 @@
         {{ map_html|safe }}
         {% if not simulation_run %}
         <div class="overlay">
-            <div class="ship-container">
-              <div class="container.ship">
-                <img src="{% static 'container.jpg' %}" alt="Cargo Container">
-                <p>Cargo Container</p>
+            <div class="vessel-container">
+                <div class="vessel">
+                  <p class="vessel-label">Container Cargo Vessel</p>
+                  <img src="{% static 'container.jpg' %}" alt="Container Cargo Vessel">
+                </div>
+                <span class="typewriter-text" data-text="Information about Container Cargo Vessel."></span>
               </div>
-              <div class="container.ship">
-                <img src="{% static 'ro ro.jpg' %}" alt="Ro Ro Container">
-                <p>Ro Ro Container</p>
+              <div class="vessel-container">
+                <div class="vessel">
+                  <p class="vessel-label">Ro Ro Container Vessel</p>
+                  <img src="{% static 'ro ro.jpg' %}" alt="Ro Ro Container Vessel">
+                </div>
+                <span class="typewriter-text" data-text="Information about Ro Ro Vessel."></span>
               </div>
-              <div class="container.ship">
-                <img src="{% static 'tanker.jpg' %}" alt="Crude Oil Tanker">
-                <p>Crude Oil Tanker</p>
+              <div class="vessel-container">
+                <div class="vessel">
+                  <p class="vessel-label">Crude Oil Tanker Vessel</p>
+                  <img src="{% static 'tanker.jpg' %}" alt="Crude Oil Tanker Vessel">
+                </div>
+                <span class="typewriter-text" data-text="Information about Crude Oil Tanker Vessel."></span>
               </div>
-            </div>
           </div>
-            <div class="overlay"></div> <!-- Add overlay div -->
+        <div id="input-box">
             <form method="post" action="{% url 'simulate' %}">
                 {% csrf_token %}
                 <div class="dropdown-container">
@@ -48,19 +55,11 @@
                         {% endfor %}
                     </select>
                 </div>
-                <!-- Note: You would need to implement addLocation in Django views if it's supposed to change the form -->
-                <div class="add-location">+ Add more locations</div>
-                <select name="vesselType" id="vesselType">
-                    <option value="">Vessel Type</option>
-                    <!-- Add options here -->
-                </select>
                 <input type="number" name="weight" placeholder="Weight">
                 <select name="propellerCondition" id="propellerCondition">
                     <option value="">Propeller Condition</option>
-                    <!-- Add options here -->
                 </select>
                 <input type="number" name="currentGasPrice" placeholder="Current Gas Price">
-                <!-- Removed the inline onclick handler -->
                 <button type="submit" name="action" value="simulate">Simulate</button>
             </form>
         </div>
@@ -75,5 +74,41 @@
         </div>
         {% endif %}
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          const vessels = document.querySelectorAll('.vessel');
+      
+          vessels.forEach(vessel => {
+            const typewriterText = vessel.nextElementSibling;
+            const text = typewriterText.getAttribute('data-text');
+            let typewriterEffect;
+      
+            vessel.addEventListener('mouseenter', () => {
+              // Clear existing intervals.
+              clearInterval(typewriterEffect);
+      
+              let index = 0;
+              typewriterText.textContent = '|'; // Show cursor
+              typewriterText.style.visibility = 'visible'; // Make the text visible
+      
+              typewriterEffect = setInterval(() => {
+                if (index < text.length) {
+                  typewriterText.textContent = text.slice(0, index + 1) + '|';
+                  index++;
+                } else {
+                  typewriterText.textContent = text; // Optionally remove the cursor at the end
+                  clearInterval(typewriterEffect); // Stop typing effect when the text is complete
+                }
+              }, 100); // Typing speed in milliseconds
+            });
+      
+            vessel.addEventListener('mouseleave', () => {
+              clearInterval(typewriterEffect); // Clear interval when the mouse leaves the image.
+              typewriterText.textContent = ''; // Clear the text.
+              typewriterText.style.visibility = 'hidden'; // Hide the text again
+            });
+          });
+        });
+      </script>
 </body>
 </html>
