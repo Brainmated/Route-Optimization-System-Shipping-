@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!-- saved from url=(0031)http://127.0.0.1:8000/simulate/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" href="./gpt - lockeport harbor_files/styles.css">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map with Information and Input Boxes</title>
+</head>
+<body>
+    <div id="map" class="map-container">
+        <div style="width:100%;"><div style="position:relative;width:100%;height:0;padding-bottom:60%;"><span style="color:#565656">Make this Notebook Trusted to load map: File -&gt; Trust Notebook</span><iframe style="position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;" allowfullscreen="" webkitallowfullscreen="" mozallowfullscreen="" src="./gpt - lockeport harbor_files/saved_resource.html"></iframe></div></div>
+        
+        
+        <div id="info-box">
+            Information
+            <p>From Greater Plutonio Terminal to Lockeport Harbor, the distance is 10518.76 km.</p>
+            <form action="http://127.0.0.1:8000/debug/" method="get">
+                <button type="submit">Change/Modify Route</button>
+            </form>
+        </div>
+        
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const vessels = document.querySelectorAll('.vessel');
+        const overlay = document.querySelector('.overlay');
+        const vesselImages = document.querySelectorAll('.vessel img'); // Move this outside of the `mouseenter` event
+
+        // Add click event listeners to vessel images
+        vesselImages.forEach(function(vesselImage) {
+          vesselImage.addEventListener('click', function() {
+            overlay.style.display = 'none'; // This will hide the overlay
+          });
+        });
+
+        vessels.forEach(vessel => {
+          const typewriterText = vessel.nextElementSibling;
+          const text = typewriterText.getAttribute('data-text');
+          let typewriterEffect;
+
+          vessel.addEventListener('mouseenter', () => {
+            // Clear existing intervals.
+            clearInterval(typewriterEffect);
+    
+            let index = 0;
+            typewriterText.textContent = '|'; // Show cursor
+            typewriterText.style.visibility = 'visible'; // Make the text visible
+
+            typewriterEffect = setInterval(() => {
+              if (index < text.length) {
+                typewriterText.textContent = text.slice(0, index + 1) + '|';
+                index++;
+              } else {
+                typewriterText.textContent = text; // Optionally remove the cursor at the end
+                clearInterval(typewriterEffect); // Stop typing effect when the text is complete
+              }
+            }, 100); // Typing speed in milliseconds
+          });
+
+          vessel.addEventListener('mouseleave', () => {
+            clearInterval(typewriterEffect); // Clear interval when the mouse leaves the image.
+            typewriterText.textContent = ''; // Clear the text.
+            typewriterText.style.visibility = 'hidden'; // Hide the text again
+          });
+        });
+      });
+  </script>
+
+</body></html>
