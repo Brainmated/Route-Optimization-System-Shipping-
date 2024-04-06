@@ -4,6 +4,7 @@ import networkx as nx
 import pandas as pd
 import numpy as np
 import gc
+import random
 from scipy.spatial import cKDTree
 import math
 from math import radians
@@ -83,11 +84,57 @@ def generate_or_load_graph(file_path, graph_file, k_neighbors=8):
 
         print(f"Graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
 
-        with open(graph_file, 'wb') as file:
-            pickle.dump(G, file)
-        print(f"Graph saved to {graph_file}")
+        # New code starts here: Add custom nodes and connect them
+    suez_canal = [
+        (31.29, 32.34),
+        (31.25, 32.30),
+        (31.10, 32.30),
+        (30.81, 32.31),
+        (30.72, 32.32),
+        (30.65, 32.34),
+        (30.57, 32.33),
+        (30.41, 32.36),
+        (24.64, 35.99),
+        (18.72, 39.15),
+        (11.48, 44.78),
+        (14.64, 52.29)
+    ]
 
-    return G
+    # Add the new nodes to the graph
+    G.add_nodes_from(suez_canal)
+
+    # Connect the new nodes in a path
+    for i in range(len(suez_canal) - 1):
+        G.add_edge(suez_canal[i], suez_canal[i + 1])
+
+    # Optionally, connect each new node to its nearest neighbor in the existing graph
+    nodes = list(G.nodes)
+    nodes_rad = np.radians(nodes)
+    tree = BallTree(nodes_rad, metric='haversine')
+
+    #apply random nodes with their buffer zone (20 neighbors) as non walkable
+    weather_nodes = random.sample(list(G.nodes), 50)
+    for node in weather_nodes:
+        node_rad = np.radians([node])
+        dist, ind = tree.query(node_rad, k=21)
+        nearest_nodes = [nodes[i] for i in ind[0] if nodes[i] != node]
+
+        #mark the 20 nearest neighbors as non walkable
+        for neighbor_node in nearest_nodes:
+            G.nodes[neighbor_node]['walkable'] = False
+
+    for node in suez_canal:
+        node_rad = np.radians([node])
+        dist, ind = tree.query(node_rad, k=2)  # Query for the 2 nearest neighbors
+        nearest_node = nodes[ind[0][1]]  # The first is the node itself, the second is the nearest neighbor
+        G.add_edge(node, nearest_node)
+
+    # Save the updated graph to the .pkl file
+    with open(graph_file, 'wb') as file:
+        pickle.dump(G, file)
+    print(f"Updated graph saved to {graph_file} with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
+
+    return G, weather_nodes
 
 def check_graph_connectivity(G):
 
@@ -173,19 +220,4 @@ if __name__ == "__main__":
 
     # Check if the graph is connected
     connected = check_graph_connectivity(G)
-    
-    # If the graph is not connected, find isolated nodes
-    if not connected:
-        # Optionally specify the output file and checkpoint file paths
-        output_file_path = os.path.join(script_dir, 'data', 'isolated_nodes.txt')
-        checkpoint_file_path = os.path.join(script_dir, 'data', 'checkpoint.txt')
-        start_point = (40.68, -74.01)
-        end_point = (40.27, -10.32)
-        output_file_path = os.path.join(script_dir, 'neighbors_info.txt')
-        # Find isolated nodes and write to file
-        write_isolated_nodes_to_file(G, output_file=output_file_path, checkpoint_file=checkpoint_file_path)
-
-        # If there are no isolated nodes, check for and handle multiple connected components
-        num_connected_components = nx.number_connected_components(G)
-        print(f"There are {num_connected_components} connected components in the graph.")
 '''
