@@ -2,6 +2,7 @@ import pickle
 import math
 import os
 import gc
+import random
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -41,7 +42,6 @@ def haversine(coord1, coord2):
     distance = R * c
 
     return distance
-
 
 def find_nearest_navigable_node_within_radius(graph, point, radius=50.0):
     # Extract the navigable nodes from the graph
@@ -112,64 +112,6 @@ def a_star_pathing(graph, start, goal, radius=50.0):
         log_to_file(str(e))
         return None
 
-# Dijkstra's algorithm
-def dijkstra(graph, start, goal, debug_file="dijkstra_debug.txt"):
-    try:
-        # Find the nearest navigable nodes to the start and goal
-        start = find_nearest_navigable_node_within_radius(graph, start)
-        goal = find_nearest_navigable_node_within_radius(graph, goal)
-    except ValueError as e:
-        print(f"Error finding start or goal: {e}")
-        return None
-
-    if start not in graph.nodes or goal not in graph.nodes:
-        print("Start or goal node is not in the graph.")
-        return None
-
-    if start == goal:
-        print("Start and goal nodes are the same; no path needed.")
-        return [start]
-
-    frontier = PriorityQueue()
-    frontier.put((0, start))
-    came_from = {start: None}
-    cost_so_far = {start: 0}
-    
-    while not frontier.empty():
-        current = frontier.get()[1]
-        
-        log_to_file(f"Current node: {current}", debug_file)  # Log current node to file
-        
-        if current == goal:
-            log_to_file("Goal reached.", debug_file)
-            break
-        
-        for neighbor in graph.neighbors(current):
-            if graph.nodes[neighbor].get('navigable', True):  # Check if the neighbor is navigable
-                new_cost = cost_so_far[current] + haversine(current, neighbor)
-                if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
-                    cost_so_far[neighbor] = new_cost
-                    priority = new_cost  # Priority is just the cost for Dijkstra
-                    frontier.put((priority, neighbor))
-                    came_from[neighbor] = current
-                    log_to_file(f"Neighbor {neighbor} added to frontier with priority {priority}.", debug_file)  # Log neighbor
-
-    if goal in came_from:
-        # Reconstruct path
-        current = goal
-        path = []
-        while current != start:
-            path.append(current)
-            current = came_from[current]
-        path.append(start)
-        path.reverse()
-        
-        print(f"Path found: {path}", debug_file)
-        return path
-    else:
-        print("Path not found.", debug_file)
-        return None
-
 def write_path_to_file(path, path_file_name):
     with open(path_file_name, 'w') as file:
         for node in path:
@@ -184,10 +126,8 @@ def calculate_distance(path):
     log_to_file(f"Total distance: {distance_str} km")
     return distance_str
 ''' TRAVEL TIME AND ARRIVAL TIME:-------------------------------------------------------------'''
-    
 
-
-G = generate_or_load_graph(file_path, graph_file_path)
+G, weather_nodes = generate_or_load_graph(file_path, graph_file_path)
 print(f"Graph loaded.")
 
 '''
