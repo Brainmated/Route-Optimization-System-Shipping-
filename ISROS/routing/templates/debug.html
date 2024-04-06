@@ -11,27 +11,32 @@
     <div id="map" class="map-container">
         {{ map_html|safe }}
         {% if not simulation_run %}
-        <div class="overlay">
-            <div class="vessel-container">
-                <div class="vessel">
-                  <p class="vessel-label">Container Cargo Vessel</p>
-                  <img src="{% static 'container.jpg' %}" alt="Container Cargo Vessel">
-                </div>
-                <span class="typewriter-text" data-text="Information about Container Cargo Vessel."></span>
+        <form method="post" action="{% url 'simulate' %}" id="vesselForm">
+          {% csrf_token %}
+          <div class="overlay">
+              <div class="vessel-container">
+                  <input type="radio" name="shipType" id="shipType1" value="container" class="hidden-radio">
+                  <label for="shipType1" class="vessel">
+                      <p class="vessel-label">Container Cargo Vessel</p>
+                      <img src="{% static 'container.jpg' %}" alt="Container Cargo Vessel">
+                  </label>
+                  <span class="typewriter-text" data-text="Information about Container Cargo Vessel."></span>
               </div>
               <div class="vessel-container">
-                <div class="vessel">
-                  <p class="vessel-label">Ro Ro Container Vessel</p>
-                  <img src="{% static 'ro ro.jpg' %}" alt="Ro Ro Container Vessel">
-                </div>
-                <span class="typewriter-text" data-text="Information about Ro Ro Vessel."></span>
+                  <input type="radio" name="shipType" id="shipType2" value="roro" class="hidden-radio">
+                  <label for="shipType2" class="vessel">
+                      <p class="vessel-label">Ro Ro Container Vessel</p>
+                      <img src="{% static 'ro ro.jpg' %}" alt="Ro Ro Container Vessel">
+                  </label>
+                  <span class="typewriter-text" data-text="Information about Ro Ro Vessel."></span>
               </div>
               <div class="vessel-container">
-                <div class="vessel">
-                  <p class="vessel-label">Crude Oil Tanker Vessel</p>
-                  <img src="{% static 'tanker.jpg' %}" alt="Crude Oil Tanker Vessel">
-                </div>
-                <span class="typewriter-text" data-text="Information about Crude Oil Tanker Vessel."></span>
+                  <input type="radio" name="shipType" id="shipType3" value="tanker" class="hidden-radio">
+                  <label for="shipType3" class="vessel">
+                      <p class="vessel-label">Crude Oil Tanker Vessel</p>
+                      <img src="{% static 'tanker.jpg' %}" alt="Crude Oil Tanker Vessel">
+                  </label>
+                  <span class="typewriter-text" data-text="Information about Crude Oil Tanker Vessel."></span>
               </div>
           </div>
         <div id="input-box">
@@ -66,49 +71,19 @@
         {% endif %}
         {% if simulation_run %}
         <div id="info-box">
-            Information
-            <p>From {{ locationA }} to {{ locationB }}, the distance is {{ distance_km }} km.</p>
+          Information
+          <p>From {{ locationA }} to {{ locationB }}, the distance is {{ distance_km }} km.</p>
+          <p>Selected Ship: {{ selected_ship }}</p>
+          <p>Average Speed: {{ average_speed_knots }} knots</p>
+          <p>Fuel Consumption Rate: {{ fuel_consumption_rate }} liters per hour</p>
+          <p>Travel Time: {{ travel_time_hours }} hours</p>
+          <p>Total Fuel Consumption: {{ fuel_consumption }} liters</p>
             <form action="{% url 'debug' %}" method="get">
                 <button type="submit">Change/Modify Route</button>
             </form>
         </div>
         {% endif %}
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          const vessels = document.querySelectorAll('.vessel');
-      
-          vessels.forEach(vessel => {
-            const typewriterText = vessel.nextElementSibling;
-            const text = typewriterText.getAttribute('data-text');
-            let typewriterEffect;
-      
-            vessel.addEventListener('mouseenter', () => {
-              // Clear existing intervals.
-              clearInterval(typewriterEffect);
-      
-              let index = 0;
-              typewriterText.textContent = '|'; // Show cursor
-              typewriterText.style.visibility = 'visible'; // Make the text visible
-      
-              typewriterEffect = setInterval(() => {
-                if (index < text.length) {
-                  typewriterText.textContent = text.slice(0, index + 1) + '|';
-                  index++;
-                } else {
-                  typewriterText.textContent = text; // Optionally remove the cursor at the end
-                  clearInterval(typewriterEffect); // Stop typing effect when the text is complete
-                }
-              }, 100); // Typing speed in milliseconds
-            });
-      
-            vessel.addEventListener('mouseleave', () => {
-              clearInterval(typewriterEffect); // Clear interval when the mouse leaves the image.
-              typewriterText.textContent = ''; // Clear the text.
-              typewriterText.style.visibility = 'hidden'; // Hide the text again
-            });
-          });
-        });
-      </script>
+    <script src="{% static 'scripts.js' %}"></script>
 </body>
 </html>
