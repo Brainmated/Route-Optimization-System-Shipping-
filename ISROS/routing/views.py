@@ -5,16 +5,14 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.urls import reverse
 from .forms import SignUpForm
-from .pathing import a_star, dijkstra
+from .pathing import a_star_pathing, G, weather_nodes, calculate_distance
+from .ships import ContainerCargoShip, CrudeOilTankerShip, RoRoShip
 from django.contrib.auth.views import LoginView, LogoutView
 from .utils import get_ports_from_csv
 import folium
 import os
-import random
-import requests
-import json
 from .ports import parse_ports
-from .graph_update import generate_or_load_graph, write_isolated_nodes_to_file, file_path, graph_file_path
+
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import numpy as np
@@ -34,7 +32,6 @@ def login_view(request):
             return render(request, "login.html", {'error_message': 'Invalid user credentials.'})
     return render(request, 'login.html')
         
-
 # Logout view
 def logout_view(request):
     logout(request)
@@ -45,7 +42,6 @@ def signup(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             form.save()
-            # You can then redirect to the login page, for example
             return redirect('login')
     else:
         form = SignUpForm()
@@ -104,7 +100,6 @@ def debug_view(request):
 
 @require_http_methods(["POST"])
 def simulate(request):
-
     min_lat, max_lat = -90, 90 
     min_lon, max_lon = -180, 180 
     grid_size = 1
@@ -127,7 +122,6 @@ def simulate(request):
     for lon in range(-180, 180, grid_size):
         folium.PolyLine([(-90, lon), (90, lon)], color="blue", weight=0.1).add_to(m)
 
-
     # Extract location A and B from the POST data
     loc_a_name = request.POST.get("locationA")
     loc_b_name = request.POST.get("locationB")
@@ -139,8 +133,20 @@ def simulate(request):
     if loc_a is None or loc_b is None:
         return JsonResponse({"error": "One or both locations not found."}, status=400)
 
-    start_node = (float(loc_a['longitude']), float(loc_a['latitude']))
-    goal_node = (float(loc_b['longitude']), float(loc_b['latitude']))
+    ship_type = request.POST.get("shipType")
+    ship_types = {
+        "container": ContainerCargoShip,
+        "tanker": CrudeOilTankerShip,
+        "roro": RoRoShip,
+    }
+
+    ship_class = ship_types.get(ship_type)
+    if ship_class is None:
+        return JsonResponse({"error": "Invalid ship type selected."}, status=400)
+    
+    ship = ship_class()
+    start_node = (float(loc_a['latitude']), float(loc_a['longitude']))
+    goal_node = (float(loc_b['latitude']), float(loc_b['longitude']))
 
     # Check if start_node and goal_node are returned correctly
     if start_node is None:
@@ -149,14 +155,51 @@ def simulate(request):
     if goal_node is None:
         return JsonResponse({"error": "Goal location is not walkable or not found."}, status=400)
 
+    # Add markers for start and goal nodes
+    start_marker = folium.Marker(
+        location=[start_node[0], start_node[1]],  # folium takes coordinates in lat, lon order
+        popup=f'Start: {start_node[0]}, {start_node[1]}',
+        icon=folium.Icon(color='green', icon='play')
+    )
+    start_marker.add_to(m)
+    goal_marker = folium.Marker(
+        location=[goal_node[0], goal_node[1]],  # folium takes coordinates in lat, lon order
+        popup=f'Goal: {goal_node[0]}, {goal_node[1]}',
+        icon=folium.Icon(color='red', icon='flag')
+    )
+    goal_marker.add_to(m)
 
+    # Add red transparent circles around weather nodes
+    for node in weather_nodes:
+        folium.Circle(
+            location=node,
+            radius=500,  # Adjust the radius as needed
+            color='red',
+            fill=True,
+            fill_opacity=0.2
+        ).add_to(m)
+        
     try:
-        a_star_path = a_star(G, start_node, goal_node)
-        folium.PolyLine(a_star_path, color="green", weight=2, opacity=1).add_to(m)
+        a_star_path = a_star_pathing(G, start_node, goal_node)
+        if a_star_path is None:
+            raise ValueError("No path found or the start and goal nodes are not connected.")
+        folium.PolyLine(a_star_path, color="green", weight=1, opacity=1).add_to(m)
 
+        distance_km = calculate_distance(a_star_path)
+        
+        # Ensure distance_km is a float
+        distance_km = float(distance_km)
+        
+        # Ensure ship.average_speed_knots is a float
+        average_speed_knots = float(ship.average_speed_knots)
+        
+        travel_time_hours = distance_km / (average_speed_knots * 1.852)
+        fuel_consumption = travel_time_hours * ship.fuel_consumption_rate
+
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=400)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
-
 
     # Serialize the map to HTML
     map_html = m._repr_html_()
@@ -164,14 +207,19 @@ def simulate(request):
     context = {
         "map_html": map_html,
         "simulation_run": True,
-        "distance_km": "Test",
+        "distance_km": distance_km,
         "locationA": request.POST.get("locationA"),
         "locationB": request.POST.get("locationB"),
+        "selected_ship": ship_type,
+        "average_speed_knots": ship.average_speed_knots,
+        "fuel_consumption_rate": ship.fuel_consumption_rate,
+        "travel_time_hours": travel_time_hours,
+        "fuel_consumption": fuel_consumption,
     }
 
-    # Pass the new map to the template
     return render(request, 'debug.html', context)
 
+'''
 def blocks_view(request):
     # Load your graph, this assumes your generate_or_load_graph returns a graph object
     G = generate_or_load_graph(file_path, graph_file_path)
@@ -208,9 +256,4 @@ def blocks_view(request):
     # Pass the map HTML to the template
     context = {'map': map_html}
     return render(request, 'blocks.html', context)
-
-def ships_view(request):
-    if request.method == "POST":
-        selected_ship = request.POST.get("ship")
-
-    return render(request, "ships.html")
+'''
