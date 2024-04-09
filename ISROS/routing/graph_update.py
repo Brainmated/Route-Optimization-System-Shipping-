@@ -39,6 +39,13 @@ def haversine(lat1, lon1, lat2, lon2):
     # Calculate the result
     return c * r
 
+def add_weighted_edges(G):
+    for edge in G.edges():
+        lat1, lon1 = edge[0]
+        lat2, lon2 = edge[1]
+        distance = haversine(lat1, lon1, lat2, lon2)
+        G[edge[0]][edge[1]]['weight'] = distance
+
 def add_edges_knn(G, nodes, k, batch_size=1000, progress_callback=None):
     nodes_rad = np.radians(nodes)
     tree = BallTree(nodes_rad, metric='haversine')
@@ -80,7 +87,7 @@ def generate_or_load_graph(file_path, graph_file, k_neighbors=8):
         nodes = [(row['latitude'], row['longitude']) for index, row in water_grid.iterrows()]
         G.add_nodes_from(nodes)
 
-        add_edges_knn(G, nodes, k=k_neighbors, batch_size=1000, progress_callback=report_progress)
+        add_edges_knn(G, nodes, k=k_neighbors, batch_size=500, progress_callback=report_progress)
 
         print(f"Graph created with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
 
@@ -112,14 +119,14 @@ def generate_or_load_graph(file_path, graph_file, k_neighbors=8):
     nodes_rad = np.radians(nodes)
     tree = BallTree(nodes_rad, metric='haversine')
 
-    #apply random nodes with their buffer zone (20 neighbors) as non walkable
+    #apply random nodes with their buffer zone (50 neighbors) as non walkable
     weather_nodes = random.sample(list(G.nodes), 50)
     for node in weather_nodes:
         node_rad = np.radians([node])
         dist, ind = tree.query(node_rad, k=21)
         nearest_nodes = [nodes[i] for i in ind[0] if nodes[i] != node]
 
-        #mark the 20 nearest neighbors as non walkable
+        #mark the 50 nearest neighbors as non walkable
         for neighbor_node in nearest_nodes:
             G.nodes[neighbor_node]['walkable'] = False
 
@@ -128,6 +135,8 @@ def generate_or_load_graph(file_path, graph_file, k_neighbors=8):
         dist, ind = tree.query(node_rad, k=2)  # Query for the 2 nearest neighbors
         nearest_node = nodes[ind[0][1]]  # The first is the node itself, the second is the nearest neighbor
         G.add_edge(node, nearest_node)
+    #add the weighted edges
+    add_weighted_edges(G)
 
     # Save the updated graph to the .pkl file
     with open(graph_file, 'wb') as file:
@@ -209,7 +218,7 @@ def interpolate_points(start, end, num_points):
     longitudes = np.linspace(start[1], end[1], num_points)
     return zip(latitudes, longitudes)
 
-'''
+
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(script_dir, 'grid_map', 'sea_grid.pkl')
@@ -220,4 +229,3 @@ if __name__ == "__main__":
 
     # Check if the graph is connected
     connected = check_graph_connectivity(G)
-'''
