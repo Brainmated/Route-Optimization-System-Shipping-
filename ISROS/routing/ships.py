@@ -1,4 +1,3 @@
-
 class Ship:
     def __init__(self, name, average_speed_knots, max_dwt, fuel_consumption_rate, propeller_condition_factor=1.0):
         self.name = name
