@@ -9,71 +9,6 @@ body {
   background-color: #f2f2f2;
 }
 
-.background-image {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/static/background-image.jpeg");
-  background-size: cover;
-  background-position: center;
-  z-index: -1;
-}
-
-.container {
-  position: absolute;
-  top: 50%;
-  right: 10%;
-  transform: translateY(-50%);
-  text-align: center; /* Centers the content inside the container */
-}
-
-h1 {
-  text-align: center;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-label {
-  margin-bottom: 5px;
-}
-  
-input[type="text"],
-input[type="password"] {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-  
-button[type="submit"] {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 4px;
-  background-color: #4CAF50;
-  color: white;
-  cursor: pointer;
-}
-
-button[type="submit"]:hover {
-  background-color: #45a049;
-}
-
-.error {
-  color: red;
-  text-align: center;
-  margin-top: 10px;
-}
-
-.account-creation {
-  text-align: center;
-  margin-top: 20px;
-}
-
-/*---------------------------DEBUG-----------------------*/
 #map {
   height: 100%;
   width: 100%;
@@ -81,43 +16,65 @@ button[type="submit"]:hover {
 }
 
 #info-box {
-  bottom: 250px; /* Distance from the bottom */
-  left: 100px; /* Distance from the left */
-  height: 24%;
+  position: absolute;
+  bottom: 250px; 
+  left: 100px; 
+  height: 40%;
+  background-color: rgba(242, 242, 242, 0.6);
+  z-index: 2;
 }
 
 #input-box {
   position: absolute;
-  top: 100px; /* Distance from the top */
-  left: 150px; /* Distance from the left */
-  width: 300px; /* Fixed width for the smaller container */
-  max-width: 300px; /* Ensuring that it doesn't get wider than 300px */
-  padding: 10px; /* Padding inside the box */
-  background-color: rgba(242, 242, 242, 0.6); /* Slightly transparent background */
+  top: 100px; 
+  left: 150px; 
+  width: 300px; 
+  max-width: 300px;
+  padding: 20px; 
+  background-color: rgba(242, 242, 242, 0.6); 
   border-radius: 5px;
-  z-index: 2; /* High enough z-index to be on top */
-  box-sizing: border-box; /* Include padding and border in the width and height */
+  z-index: 2; 
+  box-sizing: border-box; 
+}
+
+#input-box .dropdown-container,
+#input-box .input-group {
+  margin-bottom: 20px; 
 }
 
 .overlay {
-  position: fixed; /* Use fixed to cover the entire viewport */
-  top: 5%; /* To cover 90%, we center with 5% from the top and bottom */
-  left: 5%; /* To cover 90%, we center with 5% from the left and right */
+  position: fixed; 
+  top: 5%; 
+  left: 5%; 
   right: 5%;
   bottom: 5%;
-  background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black background */
+  background-color: rgba(0, 0, 0, 0.8); 
   display: flex;
-  justify-content: center; /* Center children horizontally */
-  align-items: center; /* Center children vertically */
-  z-index: 10; /* Ensure it's above other content */
+  justify-content: center; 
+  align-items: center; 
+  z-index: 10; 
+}
+
+.overlay-title {
+  position: absolute;
+  top: 0;
+  left: 1;
+  right: 1;
+  width: 90%;
+  margin-bottom: 20px;
+  text-align: center;
+  color: white;
+  font-size: 1.5em;
+  z-index: 11;
+  padding: 10px 0;
 }
 
 .vessel-container {
   display: inline-flex; 
-  flex-direction: column; /* Stack children vertically */
-  align-items: center; /* Center children horizontally */
-  margin: 0 20px; /* Add some horizontal margin between containers */
-  width: 400px; /* Fixed width for each container */
+  flex-direction: column; 
+  align-items: center; 
+  margin: 0 20px; 
+  width: 400px; 
 }
 
 .vessel {
@@ -127,18 +84,29 @@ button[type="submit"]:hover {
 
 .vessel img {
   width: 100%;
-  height: auto; /* Maintain aspect ratio */
+  height: auto; 
 }
 
 .vessel-container img {
   position: relative;
-  width: 100%; /* Use 100% width of the parent container */
-  height: auto; /* Maintain aspect ratio */
+  width: 100%; 
+  height: auto; 
+}
+
+.hidden-radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.vessel-container label {
+  cursor: pointer;
 }
 
 .vessel-label {
   color: white;
-  margin-bottom: 10px; /* Space between label and image */
+  margin-bottom: 10px; 
 }
 
 .typewriter-text {
@@ -146,10 +114,10 @@ button[type="submit"]:hover {
   visibility: hidden;
   width: 100%;
   color: white;
-  text-align: center; /* Center the text below the vessel */
+  text-align: center; 
   font-family: 'Courier New', Courier, monospace; /* Typewriter-style font */
   overflow: hidden; /* Hide overflow text */
-  padding-top: 10px; /* Add some space between the vessel image and the text */
+  padding-top: 10px; 
   border-right: .15em solid orange; /* The cursor */
   animation: blink-caret .75s step-end infinite; /* Cursor blinking effect */
 }
@@ -187,4 +155,76 @@ button {
 
 .location-dropdown {
   flex-basis: 50%;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted grey; 
+}
+
+.tooltip .question-icon {
+  display: inline-block;
+  background-color: #e8e8e8;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 120px;
+  background-color: gainsboro;
+  color: black;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  left: 50%;
+  margin-left: -60px; 
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+}
+
+#loadingOverlay {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-joke {
+  margin-top: 20px; 
+  font-style: italic;
+  text-align: center;
+}
+
+/* Style for the loader spinner */
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 2s linear infinite;
+}
+
+/* Animation for the loader spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
