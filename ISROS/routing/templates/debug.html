@@ -14,13 +14,19 @@
         <form method="post" action="{% url 'simulate' %}" id="vesselForm">
           {% csrf_token %}
           <div class="overlay">
+            <div class="overlay-title">
+                <h2>Please select a ship to proceed (hover over any ship image for more information)</h2>
+            </div>
               <div class="vessel-container">
                   <input type="radio" name="shipType" id="shipType1" value="container" class="hidden-radio">
                   <label for="shipType1" class="vessel">
                       <p class="vessel-label">Container Cargo Vessel</p>
                       <img src="{% static 'container.jpg' %}" alt="Container Cargo Vessel">
                   </label>
-                  <span class="typewriter-text" data-text="Information about Container Cargo Vessel."></span>
+                  <span class="typewriter-text" data-text="A Container Cargo Vessel carries standardized shipping containers. Attributes:
+                  - Average Speed: 22 knots
+                  - Max DWT: 182000 tons
+                  - Fuel Consumption Rate: 100 ton/hour"></span>
               </div>
               <div class="vessel-container">
                   <input type="radio" name="shipType" id="shipType2" value="roro" class="hidden-radio">
@@ -28,7 +34,11 @@
                       <p class="vessel-label">Ro Ro Container Vessel</p>
                       <img src="{% static 'ro ro.jpg' %}" alt="Ro Ro Container Vessel">
                   </label>
-                  <span class="typewriter-text" data-text="Information about Ro Ro Vessel."></span>
+                  <span class="typewriter-text" data-text="A Ro-Ro (Roll-on/Roll-off) Ship is designed to carry wheeled cargo such as cars, trucks,
+                  semi-trailer trucks, trailers and railroad cars that are driven on and off the ship on their own wheels. Attributes:
+                  - Average Speed: 17.5 knots
+                  - Max DWT: 10000 tons
+                  - Fuel Consumption Rate: 60 ton/hour"></span>
               </div>
               <div class="vessel-container">
                   <input type="radio" name="shipType" id="shipType3" value="tanker" class="hidden-radio">
@@ -36,7 +46,10 @@
                       <p class="vessel-label">Crude Oil Tanker Vessel</p>
                       <img src="{% static 'tanker.jpg' %}" alt="Crude Oil Tanker Vessel">
                   </label>
-                  <span class="typewriter-text" data-text="Information about Crude Oil Tanker Vessel."></span>
+                  <span class="typewriter-text" data-text="A Crude Oil Tanker Vessel is used to transport bulk quantities of crude oil. Attributes:
+                  - Average Speed: 13.5 knots
+                  - Max DWT: 200000 tons
+                  -Fuel Consumption Rate: 200 ton/hour"></span>
               </div>
           </div>
         <div id="input-box">
@@ -44,6 +57,10 @@
                 {% csrf_token %}
                 <div class="dropdown-container">
                     <label for="locationA">Location A:</label>
+                    <div class="tooltip"
+                        <i class="question-icon">?</i>
+                        <span class="tooltip-text">Select from the port list the starting location. Tip: You can also manually input any known ports while searching through the port list.</span>
+                    </div>
                     <select name="locationA" id="locationA">
                         <option value="">Select Location A</option>
                         {% for port in ports %}
@@ -53,6 +70,10 @@
                 </div>
                 <div class="dropdown-container">
                     <label for="locationB">Location B:</label>
+                    <div class="tooltip"
+                        <i class="question-icon">?</i>
+                        <span class="tooltip-text">Select from the port list the goal location. Tip: You can also manually input any known ports while searching through the port list.</span>
+                    </div>
                     <select name="locationB" id="locationB">
                         <option value="">Select Location B</option>
                         {% for port in ports %}
@@ -60,24 +81,52 @@
                         {% endfor %}
                     </select>
                 </div>
-                <input type="number" name="weight" placeholder="Weight">
-                <select name="propellerCondition" id="propellerCondition">
-                    <option value="">Propeller Condition</option>
-                </select>
-                <input type="number" name="currentGasPrice" placeholder="Current Gas Price">
+                <div class="input-group">
+                    <label for="weight">Cargo Weight (%):</label>
+                    <div class="tooltip"
+                        <i class="question-icon">?</i>
+                        <span class="tooltip-text">Manually assign the weight of the cargo to be stored in the vessel by dragging the bar. Weight is calculated in DWT*.</span>
+                    </div>
+                    <input type="range" id="weight" name="weight" min="1" max="100" step="1">
+                    <span id="weightDisplay">50%</span>
+                </div>
+                <div class="input-group">
+                    <label for="propellerCondition">Propeller Condition (0.1 to 1):</label>
+                    <div class="tooltip"
+                        <i class="question-icon">?</i>
+                        <span class="tooltip-text">Manually assign the condition of the propeller from 0.1 (bad) to 1 (pristine). Propeller condition affects the speed of the vessel.</span>
+                    </div>
+                    <input type="range" id="propellerCondition" name="propellerCondition" min="0.1" max="1" step="0.1">
+                    <span id="propellerDisplay">0.5</span>
+                </div>
+                <div class="input-group">
+                    <label for="currentGasPrice">Current Gas Price (€):</label>
+                    <div class="tooltip"
+                        <i class="question-icon">?</i>
+                        <span class="tooltip-text">Input the current price per litre of gas in Euros (or even consult the web).</span>
+                    </div>
+                    <input type="text" id="currentGasPrice" name="currentGasPrice" placeholder="€0.00">
+                </div>
                 <button type="submit" name="action" value="simulate">Simulate</button>
             </form>
         </div>
         {% endif %}
+        <div id="loadingOverlay" style="display:none;">
+            <div class="loader"></div>
+            <p class="loading-joke">Why is sailing like oil drilling? – They’re both a crewd business!</p>
+        </div>
         {% if simulation_run %}
         <div id="info-box">
           Information
           <p>From {{ locationA }} to {{ locationB }}, the distance is {{ distance_km }} km.</p>
           <p>Selected Ship: {{ selected_ship }}</p>
-          <p>Average Speed: {{ average_speed_knots }} knots</p>
+          <p>Average Speed: {{ average_speed_knots }} knots (Adjusted Speed: {{ adjusted_speed_kmh }} km/h)</p>
+          <p>Fuel Cost per Nautical Mile: ${{ fuel_cost_per_nautical_mile }}</p>
           <p>Fuel Consumption Rate: {{ fuel_consumption_rate }} liters per hour</p>
           <p>Travel Time: {{ travel_time_hours }} hours</p>
           <p>Total Fuel Consumption: {{ fuel_consumption }} liters</p>
+          <p>Total Fuel Cost: ${{ total_fuel_cost }}</p>
+          <a href="{% url 'export_path' %}" class="btn btn-primary">Export Path to Text File</a>
             <form action="{% url 'debug' %}" method="get">
                 <button type="submit">Change/Modify Route</button>
             </form>
