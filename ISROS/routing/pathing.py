@@ -4,6 +4,7 @@ import os
 import gc
 import random
 import numpy as np
+from collections import defaultdict
 import pandas as pd
 import networkx as nx
 from queue import PriorityQueue
@@ -100,7 +101,7 @@ def a_star_pathing(graph, start, goal, radius=50.0):
 
     # Attempt to find the A* path
     try:
-        path = nx.astar_path(graph, start, goal, heuristic=haversine)
+        path = nx.astar_path(graph, start, goal, heuristic=haversine, weight='weight')
         log_to_file("Path found:")
         for node in path:
             log_to_file(str(node))
@@ -112,6 +113,44 @@ def a_star_pathing(graph, start, goal, radius=50.0):
         log_to_file(str(e))
         return None
 
+def dijkstra_pathing(graph, start, goal, radius=50.0):
+    log_to_file("Dijkstra pathfinding called")
+    
+    # Check if the start and goal nodes are navigable, if not find the nearest navigable nodes
+    if start not in graph:
+        try:
+            start = find_nearest_navigable_node_within_radius(graph, start, radius)
+            log_to_file(f"Changed start node to nearest navigable node: {start}")
+        except ValueError as e:
+            log_to_file(str(e))
+            return None
+
+    if goal not in graph:
+        try:
+            goal = find_nearest_navigable_node_within_radius(graph, goal, radius)
+            log_to_file(f"Changed goal node to nearest navigable node: {goal}")
+        except ValueError as e:
+            log_to_file(str(e))
+            return None
+
+    if not nx.has_path(graph, start, goal):
+        log_to_file("Start and goal are not connected in the graph.")
+        return None
+
+    # Attempt to find the Dijkstra path
+    try:
+        path = nx.dijkstra_path(graph, start, goal)
+        log_to_file("Path found:")
+        for node in path:
+            log_to_file(str(node))
+        return path
+    except nx.NetworkXNoPath:
+        log_to_file("No path exists between the provided start and goal nodes.")
+        return None
+    except nx.NodeNotFound as e:
+        log_to_file(str(e))
+        return None
+    
 def write_path_to_file(path, path_file_name):
     with open(path_file_name, 'w') as file:
         for node in path:
