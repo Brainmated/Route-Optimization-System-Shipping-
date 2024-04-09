@@ -17,36 +17,6 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import numpy as np
 
-# Login view
-def login_view(request):
-
-    if request.method == "POST":
-        username = request.POST["username"]
-        password = request.POST["password"]
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('debug')
-        
-        else:
-            return render(request, "login.html", {'error_message': 'Invalid user credentials.'})
-    return render(request, 'login.html')
-        
-# Logout view
-def logout_view(request):
-    logout(request)
-    return render(request, 'logout.html')
-
-def signup(request):
-    if request.method == 'POST':
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('login')
-    else:
-        form = SignUpForm()
-    return render(request, 'signup.html', {'form': form})
-
 def debug_view(request):
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -55,9 +25,9 @@ def debug_view(request):
     ports = parse_ports()
 
     hide_input_box = request.session.pop('hide_input_box', False)
-    # Define the bounds of your grid (replace with your specific grid bounds)
-    min_lat, max_lat = -90, 90  # Replace with the minimum and maximum latitude of your grid
-    min_lon, max_lon = -180, 180  # Replace with the minimum and maximum longitude of your grid
+
+    min_lat, max_lat = -90, 90  
+    min_lon, max_lon = -180, 180  
     
     # Create a map object centered on the geographic midpoint with a starting zoom level
     #Always Mercator Projection
@@ -69,7 +39,6 @@ def debug_view(request):
         max_bounds=[[min_lat, min_lon], [max_lat, max_lon]],  # This will restrict the view to the map's initial bounds
     )
 
-    # Define the actual bounds based on your grid limits
     bounds = [[min_lat, min_lon], [max_lat, max_lon]]
     m.fit_bounds(bounds)  # Fit the map to the bounds
 
@@ -139,12 +108,23 @@ def simulate(request):
         "tanker": CrudeOilTankerShip,
         "roro": RoRoShip,
     }
+    # Retrieve cargo weight, propeller condition, and current gas price from POST data
+    cargo_weight_percentage = float(request.POST.get("weight", 50))  # Default to 50 if not provided
+    propeller_condition = float(request.POST.get("propellerCondition", 1.0))  # Default to 1 if not provided
+    current_gas_price = float(request.POST.get("currentGasPrice", 0))  # Default to 0 if not provided
 
     ship_class = ship_types.get(ship_type)
     if ship_class is None:
         return JsonResponse({"error": "Invalid ship type selected."}, status=400)
     
-    ship = ship_class()
+    ship = ship_class(propeller_condition_factor=propeller_condition)
+
+    # Calculate the adjusted speed, fuel consumption, and cost
+    adjusted_speed_knots = ship.get_adjusted_speed_knots(cargo_weight_percentage)
+    adjusted_speed_kmh = ship.get_adjusted_speed_kmh(cargo_weight_percentage)
+    fuel_consumption_per_hour = ship.get_fuel_consumption_per_hour(cargo_weight_percentage)
+    fuel_cost_per_nautical_mile = ship.get_fuel_cost_per_nautical_mile(cargo_weight_percentage, current_gas_price)
+
     start_node = (float(loc_a['latitude']), float(loc_a['longitude']))
     goal_node = (float(loc_b['latitude']), float(loc_b['longitude']))
 
@@ -173,7 +153,7 @@ def simulate(request):
     for node in weather_nodes:
         folium.Circle(
             location=node,
-            radius=500,  # Adjust the radius as needed
+            radius=15000,  
             color='red',
             fill=True,
             fill_opacity=0.2
@@ -185,6 +165,7 @@ def simulate(request):
             raise ValueError("No path found or the start and goal nodes are not connected.")
         folium.PolyLine(a_star_path, color="green", weight=1, opacity=1).add_to(m)
 
+        request.session['path'] = a_star_path
         distance_km = calculate_distance(a_star_path)
         
         # Ensure distance_km is a float
@@ -195,6 +176,12 @@ def simulate(request):
         
         travel_time_hours = distance_km / (average_speed_knots * 1.852)
         fuel_consumption = travel_time_hours * ship.fuel_consumption_rate
+        travel_time_hours_rounded = round(travel_time_hours, 3)
+        fuel_consumption_rounded = round(fuel_consumption, 3)
+
+        # Calculate the total fuel consumption and cost for the given distance
+        total_fuel_consumption = fuel_consumption_per_hour * (distance_km / adjusted_speed_knots)
+        total_fuel_cost = fuel_cost_per_nautical_mile * distance_km
 
     except ValueError as e:
         return JsonResponse({"error": str(e)}, status=400)
@@ -212,13 +199,32 @@ def simulate(request):
         "locationB": request.POST.get("locationB"),
         "selected_ship": ship_type,
         "average_speed_knots": ship.average_speed_knots,
+        "adjusted_speed_kmh": round(adjusted_speed_kmh, 3),
+        "fuel_consumption_per_hour": fuel_consumption_per_hour,
+        "fuel_cost_per_nautical_mile": round(fuel_cost_per_nautical_mile, 3),
+        "total_fuel_consumption": round(total_fuel_consumption, 3),
+        "total_fuel_cost": round(total_fuel_cost, 3),
         "fuel_consumption_rate": ship.fuel_consumption_rate,
-        "travel_time_hours": travel_time_hours,
-        "fuel_consumption": fuel_consumption,
+        "travel_time_hours": travel_time_hours_rounded,
+        "fuel_consumption": fuel_consumption_rounded,
     }
 
     return render(request, 'debug.html', context)
 
+def export_path(request):
+    path = request.session.get('path')
+    if path is None:
+        return HttpResponse("No path to export.", status=404)
+    
+    response = HttpResponse(content_type="text/plain")
+    response['Content-Disposition'] = 'attachment; filename="path.txt"'
+
+    for node in path:
+        response.write(f"{node[0]},{node[1]}\n")
+    
+    del request.session['path']
+
+    return response
 '''
 def blocks_view(request):
     # Load your graph, this assumes your generate_or_load_graph returns a graph object
