@@ -56,6 +56,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const vesselForm = document.getElementById('vesselForm');
 
   vesselForm.addEventListener('submit', function(event) {
-    loadingOverlay.style.display = 'flex';
+    const locationA = document.getElementById('locationA').value;
+    const locationB = document.getElementById('locationB').value;
+    const gasPrice = document.getElementById('currentGasPrice').value;
+    
+    if (locationA === "" || locationB === "" || gasPrice === "") {
+      event.preventDefault(); // Prevent form submission
+      alert('Please fill in all required fields: Location A, Location B, and Current Gas Price.');
+    } else {
+      loadingOverlay.style.display = 'flex'; // Only display the overlay if form validation passes
+    }
   });
 });
